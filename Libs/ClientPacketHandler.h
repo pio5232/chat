@@ -24,9 +24,10 @@ namespace C_Network
 
 		// 직렬화 버퍼에 데이터를 채우자! 가변 템플릿을 활용. 길이가 고정되어 있는 경우는 값을 넣어놓고 이 함수를 통해 send.
 		template <typename PacketType>
-		static SharedSendBuffer MakePacket(uint16 packetSize, PacketType& packet)// (uint16 packetType, PacketType& packet)
+		static SharedSendBuffer MakePacket(PacketType& packet)// (uint16 packetType, PacketType& packet)
 		{
 			// TODO : CSerializationBuffer 또한 Pool에서 꺼내서 사용하도록 만든다.
+			uint16 packetSize = sizeof(packet);
 
 			SharedSendBuffer sendBuffer = std::make_shared<C_Utility::CSerializationBuffer>(packetSize);
 
@@ -34,6 +35,18 @@ namespace C_Network
 
 			return sendBuffer;
 		}
+
+		//template <>
+		//static SharedSendBuffer MakePacket<PacketHeader>(PacketHeader& packet)
+		//{
+		//	uint16 packetSize = sizeof(PacketHeader);
+
+		//	SharedSendBuffer sendBuffer = std::make_shared < C_Utility::CSerializationBuffer>(packetSize);
+
+		//	*sendBuffer << packet;
+
+		//	return sendBuffer;
+		//}
 
 		ErrorCode ProcessPacket(ULONGLONG sessionId, uint16 packetType, C_Utility::CSerializationBuffer& buffer)
 		{
@@ -58,6 +71,7 @@ namespace C_Network
 			_packetFuncsDic[CHAT_TO_USER_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessChatToUserPacket; // Chat To Room Users
 
 			_packetFuncsDic[LOG_IN_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessLogInPacket;
+			_packetFuncsDic[MAKE_ROOM_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessMakeRoomRequestPacket;
 		}
 	private:
 		// 함수 정의
@@ -66,6 +80,7 @@ namespace C_Network
 		ErrorCode ProcessLogInPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessChatToRoomPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessChatToUserPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
+		ErrorCode ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 
 		class ChattingServer* _owner;
 		class RoomManager* _roomMgr;

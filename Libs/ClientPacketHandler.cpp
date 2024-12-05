@@ -28,7 +28,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGL
 	packetHeader.type = CHAT_TO_ROOM_RESPONSE_PACKET; 
 
 	// --- ChatRoomResponsePacket
-	C_Network::SharedSendBuffer responseBuffer = MakePacket(sizeof(PacketHeader), packetHeader);
+	C_Network::SharedSendBuffer responseBuffer = MakePacket(packetHeader);
 	_owner->Send(sessionId, responseBuffer);
 
 	// --- NotifyPacket
@@ -37,7 +37,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGL
 
 	C_Network::SharedSendBuffer notifyBuffer = MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
 	
-	*notifyBuffer << packetHeader <<  _userMgr->GetUser(sessionId)->GetUserId() << messageLen;
+	*notifyBuffer << packetHeader <<  _userMgr->GetUserBySessionId(sessionId)->GetUserId() << messageLen;
 	notifyBuffer->PutData(reinterpret_cast<const char*>(payLoad), messageLen);
 
 	free(payLoad);
@@ -69,7 +69,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGL
 	packetHeader.type = CHAT_TO_USER_RESPONSE_PACKET;
 
 	// --- ChatUserResponsePacket
-	C_Network::SharedSendBuffer responseBuffer = MakePacket(sizeof(PacketHeader), packetHeader);
+	C_Network::SharedSendBuffer responseBuffer = MakePacket(packetHeader);
 	_owner->Send(sessionId, responseBuffer);
 
 	// --- NotifyPacket
@@ -78,7 +78,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGL
 
 	C_Network::SharedSendBuffer notifyBuffer = MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
 
-	*notifyBuffer << packetHeader << _userMgr->GetUser(sessionId)->GetUserId() << messageLen;
+	*notifyBuffer << packetHeader << _userMgr->GetUserBySessionId(sessionId)->GetUserId() << messageLen;
 	notifyBuffer->PutData(reinterpret_cast<const char*>(payLoad), messageLen);
 
 	free(payLoad);
@@ -88,15 +88,41 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGL
 	return ErrorCode::NONE;
 }
 
+ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
+{
+	WCHAR roomName[ROOM_NAME_MAX_LEN]{};
+
+	buffer.GetData(reinterpret_cast<char*>(&roomName), sizeof(roomName) * MESSAGE_SIZE);
+
+	uint16 userId = _userMgr->GetUserBySessionId(sessionId)->GetUserId();
+
+	C_Network::Room* newRoom = _roomMgr->CreateRoom(userId, roomName);
+		
+	if(!newRoom)
+		return ErrorCode::CREATE_ROOM_FAILED;
+	
+	C_Network::MakeRoomResponsePacket makeRoomResponsePacket;
+
+	makeRoomResponsePacket.roomNum = newRoom->GetRoomNum();
+
+	C_Network::SharedSendBuffer responsePacketBuffer = MakePacket<PacketHeader>(makeRoomResponsePacket);
+	
+	*responsePacketBuffer << makeRoomResponsePacket.roomNum;
+
+	return ErrorCode::NONE;
+}
+
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessRoomListRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
 	std::cout << "RoomList Request\n";
 
-	C_Network::User* userPtr = _userMgr->GetUser(sessionId);
+	C_Network::User* userPtr = _userMgr->GetUserBySessionId(sessionId);
 
 	if (!userPtr)
-		return ErrorCode::SESSION_USER_NOT_CONN;
-	// User의 정보를 확인한 후 정상적인 상태에 있는 유저라면
+	{
+		C_Utility::Log(L"Room List Request Packet is Failed");
+		return ErrorCode::SESSION_USER_NOT_MAPPED;
+	}// User의 정보를 확인한 후 정상적인 상태에 있는 유저라면
 
 	// RoomMgr에게 그 유저에게 정보를 보내라고 한다.
 
@@ -135,7 +161,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLogInPacket(ULONGLONG s
 	// TODO : userId, sessionId 등 userInfo를 채워서 user를 생성해야한다. 현재는 userId와 sessionId만을 기입해놓는다.
 	_userMgr->AddUser(userId,sessionId);
 
-	C_Network::SharedSendBuffer sendBuffer = MakePacket(sizeof(LogInResponsePacket), clientResponsePacket);
+	C_Network::SharedSendBuffer sendBuffer = MakePacket(clientResponsePacket);
 
 	_owner->Send(sessionId, sendBuffer);
 

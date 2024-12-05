@@ -91,6 +91,7 @@ namespace C_Network
 		void PostConnect();
 		void PostDisconnect();
 		void PostAccept();
+
 	private:
 
 		SRWLOCK _sendBufferLock;
@@ -133,7 +134,7 @@ namespace C_Network
 		std::unordered_map<ULONGLONG, uint> _idToIndexDic; 
 		std::unordered_map<uint, ULONGLONG> _indexToIdDic;
 
-		SRWLOCK _mapLock;
+		SRWLOCK _sessionDicMapLock;
 
 	};
 	class ServerSessionManager : public SessionManager

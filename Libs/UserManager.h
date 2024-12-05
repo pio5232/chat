@@ -11,14 +11,19 @@ namespace C_Network
 		~UserManager();
 
 		User* AddUser(ULONGLONG userId,ULONGLONG sessionId); // 서버에서 LoginResponsePacket을 받아야 userId를 받을 수 있음.
+		ErrorCode DeleteUser(ULONGLONG userId);
 
-		User* GetUser(ULONGLONG sessionId); // 해당 session id를 가진 user를 찾아내서 리턴한다.
+		User* GetUserBySessionId(ULONGLONG sessionId); // 해당 session id를 가진 user를 찾아내서 리턴한다.
+		User* GetUserByUserId(ULONGLONG userId); // 해당 session id를 가진 user를 찾아내서 리턴한다.
 
 	private:
 
-		SRWLOCK _mapLock;
+		SRWLOCK _sessionDicMapLock; // sessionId -> idx map lock
+		SRWLOCK _userDicMapLock; // userId -> idx map lock
+
 		// UserId -> SessionId는 user가 Login 할 때 자신의 session id를 등록할 수 있도록 한다.
 		// SessionId -> UserId;
 		std::unordered_map<ULONGLONG, uint> _sessionToUserIdxMap;
+		std::unordered_map<ULONGLONG, uint> _userIdToUserIdxMap;
 	};
 }

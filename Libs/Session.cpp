@@ -282,6 +282,7 @@ void C_Network::Session::PostAccept()
 	TODO_UPDATE_EX_LIST;
 }
 
+
 void C_Network::Session::PostConnect()
 {
 	TODO_DEFINITION;
@@ -302,7 +303,7 @@ void C_Network::Session::PostDisconnect()
 
 C_Network::SessionManager::SessionManager(uint maxSessionCnt) : C_Utility::ManagerPool<Session>(maxSessionCnt)
 {
-	InitializeSRWLock(&_mapLock);
+	InitializeSRWLock(&_sessionDicMapLock);
 }
 
 C_Network::SessionManager::~SessionManager()
@@ -320,7 +321,7 @@ C_Network::Session* C_Network::SessionManager::AddSession(SOCKET sock, SOCKADDR_
 	ULONGLONG sessionId = newSession->GetId();
 
 	{
-		SRWLockGuard lockGuard(&_mapLock);
+		SRWLockGuard lockGuard(&_sessionDicMapLock);
 		_idToIndexDic[sessionId] = idx;
 		_indexToIdDic[idx] = sessionId;
 	}
@@ -333,25 +334,23 @@ void C_Network::SessionManager::DeleteSession(Session* sessionPtr)
 {
 	ULONGLONG sessionId = sessionPtr->GetId();
 
-	int arrIdx;
+	uint arrIdx;
 	{
-		SRWLockGuard lockGuard(&_mapLock);
+		SRWLockGuard lockGuard(&_sessionDicMapLock);
 		arrIdx = _idToIndexDic[sessionId];
 		_idToIndexDic.erase(sessionId);
 		_indexToIdDic.erase(arrIdx);
 	}
 	closesocket(_elementArr[arrIdx]->GetSock());
 	
-	{
-		SRWLockGuard lockGuard(&_indexListLock);
-		_availableElementidxList.push(arrIdx);
-	}
+	ObjectInitialize(arrIdx);
+
 	InterlockedDecrement(&_curElementCnt);
 }
 
 C_Network::Session* C_Network::SessionManager::GetSession(ULONGLONG sessionId)
 {
-	SRWLockGuard lockGuard(&_mapLock);
+	SRWLockGuard lockGuard(&_sessionDicMapLock);
 
 	// 수정 필요.
 	auto sessionIter = _idToIndexDic.find(sessionId);

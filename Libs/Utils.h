@@ -50,11 +50,22 @@ namespace C_Utility
 			return _availableElementidxList.empty();
 		}
 
+		// 재사용되는 데이터는 사용하는 측에서 관리를 제대로 하도록 한다.
+		void ObjectInitialize(uint deAllocateIndex)
+		{			
+			SRWLockGuard lockGuard(&_indexListLock);
+			
+			_availableElementidxList.push(deAllocateIndex);
+		}
+
 	protected:
-		// Accept에서는 차지 않았다가 차는 경우가 존재하지 않는다.
+		// Accept에서는 차지 않았다가 차는 경우가 존재하지 않는다. 다 찼을 경우 UINT_MAX 반환한다.
 		uint GetAvailableIndex()
 		{
 			SRWLockGuard lockGuard(&_indexListLock);
+
+			if (_availableElementidxList.size() == 0)
+				return UINT_MAX;
 
 			uint idx = _availableElementidxList.top();
 			_availableElementidxList.pop();

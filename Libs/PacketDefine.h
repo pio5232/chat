@@ -26,6 +26,9 @@ namespace C_Network
 		ROOM_LIST_REQUEST_PACKET,
 		ROOM_LIST_RESPONSE_PACKET,
 
+		MAKE_ROOM_REQUEST_PACKET,
+		MAKE_ROOM_RESPONSE_PACKET,
+
 		ENTER_ROOM_REQUEST_PACKET,
 		ENTER_ROOM_RESPONSE_PACKET,
 		ENTER_ROOM_NOTIFY_PACKET,
@@ -128,7 +131,8 @@ namespace C_Network
 
 	struct alignas (16) LogInResponsePacket : public PacketHeader
 	{
-		ULONGLONG userId;
+		LogInResponsePacket() { size = sizeof(userId); type = LOG_IN_RESPONSE_PACKET; }
+		ULONGLONG userId = 0;
 	};
 
 	// LOG_OUT
@@ -141,11 +145,23 @@ namespace C_Network
 
 	};
 
+	struct MakeRoomRequestPacket : public PacketHeader
+	{
+		MakeRoomRequestPacket() { size = sizeof(roomName); type = MAKE_ROOM_REQUEST_PACKET; }
+		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
+	};
+
+	struct MakeRoomResponsePacket : public PacketHeader
+	{
+		MakeRoomResponsePacket() { size = sizeof(roomNum); type = MAKE_ROOM_RESPONSE_PACKET; }
+		uint16 roomNum = 0;
+	};
+
 	// ENTER_ROOM
 	struct EnterRoomRequestPacket : public PacketHeader
 	{
 		uint16 roomNum = 0;
-		WCHAR roomName[ROOM_NAME_MAX_LEN];
+		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 	};
 	struct EnterRoomResponsePacket : public PacketHeader
 	{
@@ -155,12 +171,13 @@ namespace C_Network
 	// LEAVE_ROOM
 	struct LeaveRoomRequestPacket : public PacketHeader
 	{
+		LeaveRoomRequestPacket() { size = sizeof(roomNum) + sizeof(roomName); type = LEAVE_ROOM_REQUEST_PACKET; }
 		uint16 roomNum = 0;
-		WCHAR roomName[ROOM_NAME_MAX_LEN];
+		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 	};
 	struct LeaveRoomResponsePacket : public PacketHeader
 	{
-
+		LeaveRoomResponsePacket() { type = LEAVE_ROOM_RESPONSE_PACKET; }
 	};
 	struct RoomInfo
 	{
