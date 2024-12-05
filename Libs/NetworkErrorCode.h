@@ -5,7 +5,7 @@ namespace C_Network
 	enum class NetworkErrorCode : uint16
 	{
 		NONE = 0, // 정상 처리.
-		WSA_START_UP_ERROR, 
+		WSA_START_UP_ERROR,
 
 		// SERVER ERROR CODE
 		CREATE_COMPLETION_PORT_FAILED = 100, // 
@@ -13,11 +13,12 @@ namespace C_Network
 		LISTEN_FAILED,
 		BIND_FAILED,
 		//
-		 
+
 		// CLIENT ERROR CODE
 		CLIENT_NOT_INITIALIZED,
 		CLIENT_CONNECT_FAILED,
-		
+		CLIENT_NOT_CONNECTED,
+
 		SET_NET_ADDR_FAILED, // NET ADDR 설정 실패.
 		// COMMON
 		SET_SOCK_OPT_FAILED,

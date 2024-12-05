@@ -19,7 +19,7 @@ namespace C_Network
 		// 어차피 클라이언트가 처리하는 메시지는 서버에서 온 메시지이다.
 		//using PacketFunc = std::function<ErrorCode(C_Utility::CSerializationBuffer&)>;// ErrorCode(PacketHandlerType::*)(C_Utility::CSerializationBuffer&);
 		using PacketFunc = ErrorCode(PacketHandlerType::*)(C_Utility::CSerializationBuffer&);
-	
+
 		ServerPacketHandler()
 		{
 			_packetFuncsDic.clear();
@@ -72,7 +72,7 @@ namespace C_Network
 		{
 			if (_packetFuncsDic.find(packetType) == _packetFuncsDic.end())
 				return ErrorCode::CANNOT_FIND_PACKET_FUNC;
-			
+
 			//return ((reinterpret_cast<PacketHandlerType*>(this))->*_packetFuncsDic[packetType])(sessionId, buffer);
 			return ((reinterpret_cast<PacketHandlerType*>(this))->*_packetFuncsDic[packetType])(buffer);
 		}
@@ -97,15 +97,15 @@ namespace C_Network
 			_packetFuncsDic[PacketType::CHAT_TO_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToRoomResponsePacket;
 			//_packetFuncsDic[PacketType::CHAT_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessChatToRoomResponsePacket;
 			_packetFuncsDic[PacketType::CHAT_TO_USER_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToUserResponsePacket;
-			
+
 			_packetFuncsDic[PacketType::ENTER_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessEnterRoomResponsePacket;
 			//_packetFuncsDic[PacketType::ENTER_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessEnterRoomNotifyPacket; // 위 2개를 합칠까? 고민
-			
+
 			_packetFuncsDic[PacketType::LEAVE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToUserResponsePacket;
 			//_packetFuncsDic[PacketType::LEAVE_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessLeaveRoomNotifyPacket;
 		}
 	private:
-		
+
 		// 클라이언트는 싱글 스레드로 동작하기 때문에 사실 걱정할 필요가 없잖아!!
 		// PacketHandler의 역할은 데이터를 까서.. UI에 적용시킬 형태로 만든 후에 . uiTaskManager를 통해 ui를 변경하도록 요청하는 것이다.
 
@@ -114,7 +114,7 @@ namespace C_Network
 		ErrorCode ProcessLogInResponsePacket(C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessChatToRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessChatToUserResponsePacket(C_Utility::CSerializationBuffer& buffer);
-		
+
 		ErrorCode ProcessEnterRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 		// ErrorCode ProcessEnterRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer);  // 합쳐?
 

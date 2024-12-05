@@ -10,6 +10,7 @@ enum UIHandle : USHORT// UI 종류
 	ENTER_ROOM_BUTTON,
 	LOG_IN_BUTTON,
 	ROOM_REFRESH_BUTTON, // 방 새로고침 버튼
+	CREATE_ROOM_BUTTON, // 방 만들기.
 
 	// RO_EDIT - LABEL을 의미, 아마 사용하게 되는 일은 없을 것임.
 	RO_IP_EDIT,
@@ -26,9 +27,9 @@ enum UIHandle : USHORT// UI 종류
 	ID_EDIT,
 	PW_EDIT,
 
-	// LISTBOX
-	ROOM_INFO_LISTBOX,
-	CHATTING_LISTBOX, // 실제 사용 채팅창.
+	// LIST VIEW
+	ROOM_INFO_LISTVIEW,
+	CHATTING_LISTVIEW, // 실제 사용 채팅창.
 
 	// COMBOBOX
 	HANDLE_MAX_CNT,
@@ -40,7 +41,7 @@ enum UIHandleType // UI 타입
 	BUTTON,
 	EDIT,
 	RO_EDIT,
-	LISTBOX,
+	LISTVIEW,
 	COMBOBOX,
 };
 
@@ -48,7 +49,7 @@ enum class TaskType : USHORT // 작업 타입
 {
 	CLEAR = 0, // INIT
 	WRITE, // TEXT
-	ADD_ITEM, // LIST_BOX ADD ITEM
+	ADD_ITEM, // LIST_VIEW ADD ITEM
 };
 class UITaskManager
 {
