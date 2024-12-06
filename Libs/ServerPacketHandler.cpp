@@ -53,7 +53,7 @@ ErrorCode C_Network::ChattingServerPacketHandler::ProcessRoomListResponsePacket(
 
     buffer >> roomListResponsePacket.roomCnt;
     
-    ErrorCode uiInitRet = _uiTaskManager->DirectPostUpdateUI(UIHandle::ROOM_INFO_LISTBOX, LB_RESETCONTENT, 0, 0);
+    ErrorCode uiInitRet = _uiTaskManager->DirectPostUpdateUI(UIHandle::ROOM_INFO_LISTVIEW, LB_RESETCONTENT, 0, 0);
 
     if (ErrorCode::NONE != uiInitRet)
     {
@@ -67,7 +67,7 @@ ErrorCode C_Network::ChattingServerPacketHandler::ProcessRoomListResponsePacket(
         
         buffer >> *roomInfo;
 
-        ErrorCode roomUpdateRet = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::ADD_ITEM, UIHandle::ROOM_INFO_LISTBOX), reinterpret_cast<LPARAM>(roomInfo));
+        ErrorCode roomUpdateRet = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::ADD_ITEM, UIHandle::ROOM_INFO_LISTVIEW), reinterpret_cast<LPARAM>(roomInfo));
 
         if (roomUpdateRet != ErrorCode::NONE)
         {
@@ -132,5 +132,17 @@ ErrorCode C_Network::ChattingServerPacketHandler::ProcessEnterRoomResponsePacket
 
 ErrorCode C_Network::ChattingServerPacketHandler::ProcessLeaveRoomResponsePacket(C_Utility::CSerializationBuffer& buffer)
 {
+    return ErrorCode::NONE;
+}
+
+ErrorCode C_Network::ChattingServerPacketHandler::ProcessMakeRoomResponsePacket(C_Utility::CSerializationBuffer& buffer)
+{
+    //C_Utility::Log(L"MakeRoom Response Packet Recv");
+
+    //MakeRoomResponsePacket responsePacket;
+    //
+    //buffer >> responsePacket.roomNum;
+
+
     return ErrorCode::NONE;
 }

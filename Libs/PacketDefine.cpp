@@ -24,6 +24,15 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::Lo
 	return serialBuffer;
 }
 
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket)
+{
+	serialBuffer << makeRoomRequestPacket.size << makeRoomRequestPacket.type;
+
+	serialBuffer.PutData(reinterpret_cast<char*>(makeRoomRequestPacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
+}
+
 
 // ------------------------------  operator >>  (빼내기), PacketHeader 뺄 필요 없다. --------------------------------
 
@@ -42,6 +51,14 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Lo
 	return serialBuffer;
 }
 
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket)
+{
+	serialBuffer.GetData(reinterpret_cast<char*>(makeRoomResponsePacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
+}
+
+
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo)
 {
 	serialBuffer >> roomInfo.ownerId >> roomInfo.roomNum >> roomInfo.curUserCnt >> roomInfo.maxUserCnt;
@@ -49,5 +66,4 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Ro
 	serialBuffer.GetData(reinterpret_cast<char*>(roomInfo.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
 
 	return serialBuffer;
-	// TODO: 여기에 return 문을 삽입합니다.
 }

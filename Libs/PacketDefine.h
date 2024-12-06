@@ -61,6 +61,17 @@ namespace C_Network
 
 		PACKET_SIZE_MAX = 500,
 	};
+
+	struct RoomInfo
+	{
+		static uint16 GetSize() { return sizeof(ownerId) + sizeof(roomNum) + sizeof(curUserCnt) + sizeof(maxUserCnt) + sizeof(roomName); }
+		ULONGLONG ownerId;
+		uint16 roomNum;
+		uint16 curUserCnt;
+		uint16 maxUserCnt;
+		WCHAR roomName[ROOM_NAME_MAX_LEN];
+	};
+
 	// size = payload의 size
 	// 네트워크 코드에서 PacketHeader를 분리하게 되면 PacketHeader만큼의 사이즈는 사용하지 않는다.
 	struct PacketHeader
@@ -151,10 +162,10 @@ namespace C_Network
 		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 	};
 
-	struct MakeRoomResponsePacket : public PacketHeader
+	struct alignas (64) MakeRoomResponsePacket : public PacketHeader
 	{
-		MakeRoomResponsePacket() { size = sizeof(roomNum); type = MAKE_ROOM_RESPONSE_PACKET; }
-		uint16 roomNum = 0;
+		MakeRoomResponsePacket() { size = RoomInfo::GetSize(); type = MAKE_ROOM_RESPONSE_PACKET; }
+		RoomInfo roomInfo = {};
 	};
 
 	// ENTER_ROOM
@@ -179,15 +190,7 @@ namespace C_Network
 	{
 		LeaveRoomResponsePacket() { type = LEAVE_ROOM_RESPONSE_PACKET; }
 	};
-	struct RoomInfo
-	{
-		static uint16 GetSize() { return sizeof(ownerId) + sizeof(roomNum) + sizeof(curUserCnt) + sizeof(maxUserCnt) + sizeof(roomName); }
-		ULONGLONG ownerId;
-		uint16 roomNum;
-		uint16 curUserCnt;
-		uint16 maxUserCnt;
-		WCHAR roomName[ROOM_NAME_MAX_LEN];
-	};
+
 	// REQUEST ROOM LIST
 	struct RoomListRequestPacket : public PacketHeader
 	{
@@ -204,12 +207,15 @@ namespace C_Network
 // Only Has Head Packet
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::PacketHeader& packetHeader);
 
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
+;
 // Packet 정의할 때 패킷에 맞는 직렬화버퍼 << operator를 정의해줘야한다, PacketHeader의 사이즈 계산은 해놓은 상태여야한다!  operator << >> 는 입력 / 출력만 행할 뿐이다.
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket);
 
 // >> opeartor 정의, >> operator는 PacketHeader에 대한 분리를 진행했기에 packetHeader의 데이터는 신경쓰지 않아도 된다.
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
-serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket);
 

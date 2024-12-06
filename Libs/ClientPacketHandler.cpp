@@ -90,24 +90,24 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGL
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
-	WCHAR roomName[ROOM_NAME_MAX_LEN]{};
+	//WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 
-	buffer.GetData(reinterpret_cast<char*>(&roomName), sizeof(roomName) * MESSAGE_SIZE);
+	//buffer.GetData(reinterpret_cast<char*>(&roomName), sizeof(roomName) * MESSAGE_SIZE);
 
-	uint16 userId = _userMgr->GetUserBySessionId(sessionId)->GetUserId();
+	//uint16 userId = _userMgr->GetUserBySessionId(sessionId)->GetUserId();
 
-	C_Network::Room* newRoom = _roomMgr->CreateRoom(userId, roomName);
-		
-	if(!newRoom)
-		return ErrorCode::CREATE_ROOM_FAILED;
-	
-	C_Network::MakeRoomResponsePacket makeRoomResponsePacket;
+	//C_Network::Room* newRoom = _roomMgr->CreateRoom(userId, roomName);
+	//	
+	//if(!newRoom)
+	//	return ErrorCode::CREATE_ROOM_FAILED;
+	//
+	//C_Network::MakeRoomResponsePacket makeRoomResponsePacket;
 
-	makeRoomResponsePacket.roomNum = newRoom->GetRoomNum();
+	//makeRoomResponsePacket.roomNum = newRoom->GetRoomNum();
 
-	C_Network::SharedSendBuffer responsePacketBuffer = MakePacket<PacketHeader>(makeRoomResponsePacket);
-	
-	*responsePacketBuffer << makeRoomResponsePacket.roomNum;
+	//C_Network::SharedSendBuffer responsePacketBuffer = MakePacket<PacketHeader>(makeRoomResponsePacket);
+	//
+	//*responsePacketBuffer << makeRoomResponsePacket.roomNum;
 
 	return ErrorCode::NONE;
 }

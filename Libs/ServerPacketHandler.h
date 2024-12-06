@@ -44,17 +44,6 @@ namespace C_Network
 			return sendBuffer;
 		}
 
-		template <>
-		static SharedSendBuffer MakePacket<PacketHeader>(PacketHeader& packet)
-		{
-			uint16 packetSize = sizeof(PacketHeader);
-
-			SharedSendBuffer sendBuffer = std::make_shared < C_Utility::CSerializationBuffer>(packetSize);
-
-			*sendBuffer << packet;
-
-			return sendBuffer;
-		}
 		//// 직렬화 버퍼에 데이터를 채우자! 가변 템플릿을 활용.
 		//template <typename PacketType>
 		//static SharedSendBuffer MakePacket(uint16 packetType, PacketType& packet)//(uint16 packetType, uint16 packetSize, Types... args )
@@ -103,6 +92,7 @@ namespace C_Network
 
 			_packetFuncsDic[PacketType::LEAVE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToUserResponsePacket;
 			//_packetFuncsDic[PacketType::LEAVE_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessLeaveRoomNotifyPacket;
+			_packetFuncsDic[PacketType::MAKE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessMakeRoomResponsePacket;
 		}
 	private:
 
@@ -120,6 +110,8 @@ namespace C_Network
 
 		ErrorCode ProcessLeaveRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 		// ErrorCode ProcessLeaveRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer);  // 합쳐?
+
+		ErrorCode ProcessMakeRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 
 		UITaskManager* _uiTaskManager;
 		class ChattingClient* _owner;
