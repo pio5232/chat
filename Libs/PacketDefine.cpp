@@ -53,6 +53,14 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::En
 	// TODO: 여기에 return 문을 삽입합니다.
 }
 
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket)
+{
+	serialBuffer << enterRoomNotifyPacket.enterUserId;
+
+	return serialBuffer;
+	// TODO: 여기에 return 문을 삽입합니다.
+}
+
 
 // ------------------------------  operator >>  (빼내기), PacketHeader 뺄 필요 없다. --------------------------------
 
@@ -81,6 +89,14 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Ma
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket)
 {
 	serialBuffer >> enterRoomResponsePacket.bAllow >> enterRoomResponsePacket.roomInfo;
+
+	return serialBuffer;
+	// TODO: 여기에 return 문을 삽입합니다.
+}
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket)
+{
+	serialBuffer >> enterRoomNotifyPacket.enterUserId;
 
 	return serialBuffer;
 	// TODO: 여기에 return 문을 삽입합니다.
