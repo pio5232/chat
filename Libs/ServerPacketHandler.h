@@ -59,9 +59,11 @@ namespace C_Network
 
 		ErrorCode ProcessPacket(ULONGLONG sessionId, uint16 packetType, C_Utility::CSerializationBuffer& buffer)
 		{
+			wprintf(L"들어온 패킷 타입 : %d\n", packetType);
 			if (_packetFuncsDic.find(packetType) == _packetFuncsDic.end())
 				return ErrorCode::CANNOT_FIND_PACKET_FUNC;
 
+			wprintf(L"처리되는 패킷 타입 : %d\n", packetType);
 			//return ((reinterpret_cast<PacketHandlerType*>(this))->*_packetFuncsDic[packetType])(sessionId, buffer);
 			return ((reinterpret_cast<PacketHandlerType*>(this))->*_packetFuncsDic[packetType])(buffer);
 		}

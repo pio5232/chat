@@ -44,7 +44,7 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::Ma
 
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket)
 {
-	serialBuffer << enterRoomResponsePacket.bAllow << enterRoomResponsePacket.roomInfo.ownerId << enterRoomResponsePacket.roomInfo.roomNum 
+	serialBuffer << enterRoomResponsePacket.size << enterRoomResponsePacket.type << enterRoomResponsePacket.bAllow << enterRoomResponsePacket.roomInfo.ownerId << enterRoomResponsePacket.roomInfo.roomNum
 		<< enterRoomResponsePacket.roomInfo.curUserCnt << enterRoomResponsePacket.roomInfo.maxUserCnt;
 
 	serialBuffer.PutData(reinterpret_cast<char*>(enterRoomResponsePacket.roomInfo.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
@@ -55,7 +55,7 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::En
 
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket)
 {
-	serialBuffer << enterRoomNotifyPacket.enterUserId;
+	serialBuffer << enterRoomNotifyPacket.size << enterRoomNotifyPacket.type << enterRoomNotifyPacket.enterUserId;
 
 	return serialBuffer;
 	// TODO: 여기에 return 문을 삽입합니다.
