@@ -71,7 +71,7 @@ namespace C_Network
 			_packetFuncsDic[CHAT_TO_USER_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessChatToUserPacket; // Chat To Room Users
 
 			_packetFuncsDic[LOG_IN_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessLogInPacket;
-			_packetFuncsDic[MAKE_ROOM_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessMakeRoomRequestPacket;
+			_packetFuncsDic[MAKE_ROOM_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessEnterRoomRequestPacket;
 		}
 	private:
 		// 함수 정의
@@ -80,7 +80,7 @@ namespace C_Network
 		ErrorCode ProcessLogInPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessChatToRoomPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessChatToUserPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
-		ErrorCode ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
+		ErrorCode ProcessEnterRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 
 		class ChattingServer* _owner;
 		class RoomManager* _roomMgr;
