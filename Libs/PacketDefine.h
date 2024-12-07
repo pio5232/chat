@@ -113,16 +113,25 @@ namespace C_Network
 	// head¸¸ Á¸Àç.
 	struct ChatUserResponsePacket : public PacketHeader
 	{
-	public:
 		ChatUserResponsePacket(){ type = CHAT_TO_USER_RESPONSE_PACKET; }
 	};
 	
 	struct ChatRoomResponsePacket : public PacketHeader 
 	{
-	public:
 		ChatRoomResponsePacket() { type = CHAT_TO_ROOM_RESPONSE_PACKET; }
 	};
-	
+	struct EnterRoomResponsePacket : public PacketHeader
+	{
+		EnterRoomResponsePacket() { type = ENTER_ROOM_RESPONSE_PACKET; }
+	};
+	struct LeaveRoomResponsePacket : public PacketHeader
+	{
+		LeaveRoomResponsePacket() { type = LEAVE_ROOM_RESPONSE_PACKET; }
+	};
+
+
+
+
 
 	struct ChatOtherUserNotifyPacket : public PacketHeader
 	{
@@ -171,12 +180,16 @@ namespace C_Network
 	// ENTER_ROOM
 	struct EnterRoomRequestPacket : public PacketHeader
 	{
+		EnterRoomRequestPacket() { size = sizeof(roomNum) + sizeof(roomName); type = ENTER_ROOM_REQUEST_PACKET; }
 		uint16 roomNum = 0;
 		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 	};
-	struct EnterRoomResponsePacket : public PacketHeader
-	{
 
+	// other notify
+	struct EnterRoomNotifyPacket : public PacketHeader
+	{
+		EnterRoomNotifyPacket() { size = sizeof(enterUserId); type = ENTER_ROOM_NOTIFY_PACKET; }
+		ULONGLONG enterUserId = 0;
 	};
 
 	// LEAVE_ROOM
@@ -185,10 +198,6 @@ namespace C_Network
 		LeaveRoomRequestPacket() { size = sizeof(roomNum) + sizeof(roomName); type = LEAVE_ROOM_REQUEST_PACKET; }
 		uint16 roomNum = 0;
 		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
-	};
-	struct LeaveRoomResponsePacket : public PacketHeader
-	{
-		LeaveRoomResponsePacket() { type = LEAVE_ROOM_RESPONSE_PACKET; }
 	};
 
 	// REQUEST ROOM LIST

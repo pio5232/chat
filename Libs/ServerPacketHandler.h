@@ -88,10 +88,10 @@ namespace C_Network
 			_packetFuncsDic[PacketType::CHAT_TO_USER_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToUserResponsePacket;
 
 			_packetFuncsDic[PacketType::ENTER_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessEnterRoomResponsePacket;
-			//_packetFuncsDic[PacketType::ENTER_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessEnterRoomNotifyPacket; // 위 2개를 합칠까? 고민
+			_packetFuncsDic[PacketType::ENTER_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessEnterRoomNotifyPacket; // 
 
 			_packetFuncsDic[PacketType::LEAVE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToUserResponsePacket;
-			//_packetFuncsDic[PacketType::LEAVE_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessLeaveRoomNotifyPacket;
+			_packetFuncsDic[PacketType::LEAVE_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessLeaveRoomNotifyPacket;
 			_packetFuncsDic[PacketType::MAKE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessMakeRoomResponsePacket;
 		}
 	private:
@@ -106,10 +106,10 @@ namespace C_Network
 		ErrorCode ProcessChatToUserResponsePacket(C_Utility::CSerializationBuffer& buffer);
 
 		ErrorCode ProcessEnterRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
-		// ErrorCode ProcessEnterRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer);  // 합쳐?
+		ErrorCode ProcessEnterRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer);  
 
 		ErrorCode ProcessLeaveRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
-		// ErrorCode ProcessLeaveRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer);  // 합쳐?
+		ErrorCode ProcessLeaveRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer); 
 
 		ErrorCode ProcessMakeRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 

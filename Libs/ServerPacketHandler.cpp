@@ -130,14 +130,24 @@ ErrorCode C_Network::ChattingServerPacketHandler::ProcessEnterRoomResponsePacket
     return ErrorCode::NONE;
 }
 
+ErrorCode C_Network::ChattingServerPacketHandler::ProcessEnterRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer)
+{
+    return ErrorCode();
+}
+
 ErrorCode C_Network::ChattingServerPacketHandler::ProcessLeaveRoomResponsePacket(C_Utility::CSerializationBuffer& buffer)
 {
     return ErrorCode::NONE;
 }
 
+ErrorCode C_Network::ChattingServerPacketHandler::ProcessLeaveRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer)
+{
+    return ErrorCode();
+}
+
 ErrorCode C_Network::ChattingServerPacketHandler::ProcessMakeRoomResponsePacket(C_Utility::CSerializationBuffer& buffer)
 {
-    //C_Utility::Log(L"MakeRoom Response Packet Recv");
+    C_Utility::Log(L"MakeRoom Response Packet Recv");
 
     //MakeRoomResponsePacket responsePacket;
     //
