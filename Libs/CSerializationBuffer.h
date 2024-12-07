@@ -32,6 +32,7 @@ namespace C_Utility
 		// 연산자 오버로딩
 		CSerializationBuffer& operator<<(unsigned char ucValue);
 		CSerializationBuffer& operator<<(char cValue);
+		CSerializationBuffer& operator<<(bool bValue);
 
 		CSerializationBuffer& operator<<(unsigned short usValue);
 		CSerializationBuffer& operator<<(short shValue);
@@ -52,6 +53,7 @@ namespace C_Utility
 
 		CSerializationBuffer& operator>>(unsigned char& ucValue);
 		CSerializationBuffer& operator>>(char& cValue);
+		CSerializationBuffer& operator>>(bool& bValue);
 
 		CSerializationBuffer& operator>>(unsigned short& usValue);
 		CSerializationBuffer& operator>>(short& shValue);

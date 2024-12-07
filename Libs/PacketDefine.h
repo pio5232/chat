@@ -120,10 +120,7 @@ namespace C_Network
 	{
 		ChatRoomResponsePacket() { type = CHAT_TO_ROOM_RESPONSE_PACKET; }
 	};
-	struct EnterRoomResponsePacket : public PacketHeader
-	{
-		EnterRoomResponsePacket() { type = ENTER_ROOM_RESPONSE_PACKET; }
-	};
+
 	struct LeaveRoomResponsePacket : public PacketHeader
 	{
 		LeaveRoomResponsePacket() { type = LEAVE_ROOM_RESPONSE_PACKET; }
@@ -171,9 +168,10 @@ namespace C_Network
 		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 	};
 
-	struct alignas (64) MakeRoomResponsePacket : public PacketHeader
+	struct alignas (64) EnterRoomResponsePacket : public PacketHeader
 	{
-		MakeRoomResponsePacket() { size = RoomInfo::GetSize(); type = MAKE_ROOM_RESPONSE_PACKET; }
+		EnterRoomResponsePacket() { size = sizeof(bAllow) + RoomInfo::GetSize(); type = ENTER_ROOM_RESPONSE_PACKET; }
+		bool bAllow = false;
 		RoomInfo roomInfo = {};
 	};
 

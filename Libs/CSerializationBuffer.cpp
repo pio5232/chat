@@ -165,6 +165,16 @@ CSerializationBuffer& CSerializationBuffer::operator<<(char cValue)
 	return *this;
 }
 
+CSerializationBuffer& C_Utility::CSerializationBuffer::operator<<(bool bValue)
+{
+	errno_t errCpy = memcpy_s(&m_chpBuffer[m_iRear], m_iBufferCapacity - m_iDataSize, (void*)&bValue, sizeof(bValue));
+
+	m_iDataSize += sizeof(bValue);
+	m_iRear += sizeof(bValue);
+
+	return *this;
+}
+
 CSerializationBuffer& CSerializationBuffer::operator<<(unsigned short usValue)
 {
 	//if (m_iBufferCapacity - m_iDataSize < sizeof(usValue))
@@ -320,6 +330,16 @@ CSerializationBuffer& CSerializationBuffer::operator>>(char& cValue)
 
 	m_iDataSize -= sizeof(cValue);
 	m_iFront += sizeof(cValue);
+
+	return *this;
+}
+
+CSerializationBuffer& C_Utility::CSerializationBuffer::operator>>(bool& bValue)
+{
+	errno_t errCpy = memcpy_s(&bValue, sizeof(bValue), &m_chpBuffer[m_iFront], sizeof(bValue));
+
+	m_iDataSize -= sizeof(bValue);
+	m_iFront += sizeof(bValue);
 
 	return *this;
 }

@@ -32,7 +32,7 @@ ErrorCode UITaskManager::PostUpdateUI(uint uMsg, WPARAM wParam, LPARAM lParam)
 {
 	//std::cout << "PostUpdateUI " << handle <<"  msg " <<uMsg << "\n";
 
-	bool bRet = PostMessage(_mainHwnd, uMsg, wParam, lParam);
+	bool bRet = SendMessage(_mainHwnd, uMsg, wParam, lParam);
 	
 	if (!bRet) // PostMessage => 비동기로 메시지큐에 전달. SendMessage => 동기로 전달이 완료될 때까지 블락. 비동기로 전송하도록 한다.
 	{
@@ -47,7 +47,7 @@ ErrorCode UITaskManager::DirectPostUpdateUI(UIHandle handleUI, uint wMsg, WPARAM
 {
 	HWND hWnd = GetHandle(handleUI);
 
-	bool bRet = PostMessage(hWnd, wMsg, wParam, lParam);
+	bool bRet = SendMessage(hWnd, wMsg, wParam, lParam);
 
 	if (!bRet) 
 	{
