@@ -86,16 +86,15 @@ ErrorCode C_Network::ChattingServerPacketHandler::ProcessLogInResponsePacket(C_U
     
     // TODO : new 안 하게 바꾸기tring(static_cast<ULONGLONG>(responsePacket.userId));
 
-    std::wstring_view message = L"User Id : " + std::to_wstring(responsePacket.userId);
+    std::wstring message = L"User Id : " + std::to_wstring(responsePacket.userId);
 
-    //WCHAR* wstr = new WCHAR[message.length() + 1]{};
+    WCHAR* wstr = new WCHAR[message.length() + 1]{};
 
-    //wcscpy_s(wstr, message.length()+1, message.c_str());
+    wcscpy_s(wstr, message.length()+1, message.c_str());
 
     C_Utility::Log(L"LogInPacket Recv\n");
 
-    //ErrorCode ret = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::WRITE, UIHandle::RO_USER_ID_EDIT), reinterpret_cast<LPARAM>(wstr));
-    ErrorCode ret = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::WRITE, UIHandle::RO_USER_ID_EDIT), reinterpret_cast<LPARAM>(message.data()));
+    ErrorCode ret = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::WRITE, UIHandle::RO_USER_ID_EDIT), reinterpret_cast<LPARAM>(wstr));
    
     if (ret != ErrorCode::NONE)
     {
@@ -128,32 +127,44 @@ ErrorCode C_Network::ChattingServerPacketHandler::ProcessChatToUserResponsePacke
 
 ErrorCode C_Network::ChattingServerPacketHandler::ProcessEnterRoomResponsePacket(C_Utility::CSerializationBuffer& buffer) // EnterRoom -> UI를 ROOM 정보에 맞게 세팅한다
 {
-    C_Utility::Log(L"MakeRoom Response Packet Recv");
+    C_Utility::Log(L"EnterRoom Response Packet Recv");
 
-    C_Network::EnterRoomResponsePacket responsePacket;
+    C_Network::EnterRoomResponsePacket* responsePacket = new C_Network::EnterRoomResponsePacket;
 
-    buffer >> responsePacket.bAllow >> responsePacket.roomInfo;
+    buffer >> responsePacket->bAllow >> responsePacket->roomInfo;
 
-    if (responsePacket.bAllow)
+    if (responsePacket->bAllow)
     {
-        ErrorCode chatRoomRet = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::CLEAR, UIHandle::CHATTING_DIALOG), reinterpret_cast<LPARAM>(&responsePacket.roomInfo));
+        ErrorCode postUIRet = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::INIT_DIALOG, UIHandle::CHATTING_DIALOG), reinterpret_cast<LPARAM>(responsePacket));
 
-        if (chatRoomRet != ErrorCode::NONE)
-            C_Utility::Log(L"CHAT ROOM CLEAR FAILED\N");
+        if (postUIRet != ErrorCode::NONE)
+            C_Utility::Log(L"ENTER RESPONSE - CHAT ROOM CLEAR FAILED\N");
         else
-            C_Utility::Log(L"CHAT ROOM CLEAR");
+            C_Utility::Log(L"ENTER RESPONSE - CHAT ROOM CLEAR");
 
-        return chatRoomRet;
+        return postUIRet;
     }
-
-    return ErrorCode::NONE;
 
     return ErrorCode::NONE;
 }
 
 ErrorCode C_Network::ChattingServerPacketHandler::ProcessEnterRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer) // NOTIFY ROOM -> 접속 정보를 알린다.
 {
-    return ErrorCode();
+    C_Utility::Log(L"EnterRoom Notify Packet Recv");
+
+    C_Network::EnterRoomNotifyPacket enterNotifyPacket;
+
+    buffer >> enterNotifyPacket.enterUserId;
+
+    // 32 BIT는 LPARAM (4BYTE) , ULONGLONG (8BYTE) 맞지 않음.
+    ErrorCode postUIRet = _uiTaskManager->PostUpdateUI(WM_USER_UPDATE, MAKEWPARAM(TaskType::SHOW_DIALOG, UIHandle::CHATTING_DIALOG), static_cast<LPARAM>(enterNotifyPacket.enterUserId));
+
+    if (postUIRet != ErrorCode::NONE)
+        C_Utility::Log(L"ENTER NOTIFY - CHAT ROOM CLEAR FAILED\N");
+    else
+        C_Utility::Log(L"ENTER NOTIFY - CHAT ROOM CLEAR");
+
+    return ErrorCode::NONE;
 }
 
 ErrorCode C_Network::ChattingServerPacketHandler::ProcessLeaveRoomResponsePacket(C_Utility::CSerializationBuffer& buffer)

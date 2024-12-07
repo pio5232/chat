@@ -92,7 +92,6 @@ namespace C_Network
 
 			_packetFuncsDic[PacketType::LEAVE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessChatToUserResponsePacket;
 			_packetFuncsDic[PacketType::LEAVE_ROOM_NOTIFY_PACKET] = &ChattingServerPacketHandler::ProcessLeaveRoomNotifyPacket;
-			_packetFuncsDic[PacketType::MAKE_ROOM_RESPONSE_PACKET] = &ChattingServerPacketHandler::ProcessMakeRoomResponsePacket;
 		}
 	private:
 
@@ -110,8 +109,6 @@ namespace C_Network
 
 		ErrorCode ProcessLeaveRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessLeaveRoomNotifyPacket(C_Utility::CSerializationBuffer& buffer); 
-
-		ErrorCode ProcessMakeRoomResponsePacket(C_Utility::CSerializationBuffer& buffer);
 
 		UITaskManager* _uiTaskManager;
 		class ChattingClient* _owner;

@@ -31,15 +31,15 @@ enum UIHandle : USHORT// UI 종류
 	ROOM_INFO_LISTVIEW,
 	//CHATTING_LISTVIEW, // 실제 사용 채팅창.
 
-	// COMBOBOX
-	HANDLE_MAX_CNT,
-
 	// LIST BOX
 	CHATTING_LISTBOX,
 	CHATTING_GROUP_LISTBOX, // 인원 현황 창
 
 	// DIALOG
 	CHATTING_DIALOG,
+	
+	// MAX
+	HANDLE_MAX_CNT,
 };
 
 enum UIHandleType // UI 타입
@@ -59,7 +59,7 @@ enum class TaskType : USHORT // 작업 타입
 	CLEAR = 0, // INIT
 	WRITE, // TEXT
 	ADD_ITEM, // LIST_VIEW ADD ITEM
-	CREATE_DIALOG, // DIALOG 생성
+	INIT_DIALOG, // DIALOG 세팅
 	SHOW_DIALOG, // DIALOG 생성 (MODALESS)
 };
 class UITaskManager

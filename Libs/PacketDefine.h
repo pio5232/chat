@@ -27,7 +27,7 @@ namespace C_Network
 		ROOM_LIST_RESPONSE_PACKET,
 
 		MAKE_ROOM_REQUEST_PACKET,
-		MAKE_ROOM_RESPONSE_PACKET,
+		// MAKE_ROOM_RESPONSE_PACKET, -> ENTER_ROOM_RESPONSE_PACKET으로 RESPONSE를 보냄.
 
 		ENTER_ROOM_REQUEST_PACKET,
 		ENTER_ROOM_RESPONSE_PACKET,
@@ -220,9 +220,11 @@ serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::R
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
 
 // >> opeartor 정의, >> operator는 PacketHeader에 대한 분리를 진행했기에 packetHeader의 데이터는 신경쓰지 않아도 된다.
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
 
