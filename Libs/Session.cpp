@@ -18,16 +18,9 @@ void C_Network::IocpEvent::Reset()
 			Session
 ------------------------------*/
 
-// Pool 형태로 만들어 놓는 형태.
-C_Network::Session::Session() : _socket(INVALID_SOCKET), _recvEvent(), _sendEvent(), _connectEvent(), _disconnEvent(), _ioCount(0),
-_netAddr{}, _sendFlag(0), _recvBuffer(), _sessionId(ULLONG_MAX)
-{
-	InitializeSRWLock(&_sendBufferLock);
-}
-
 // new로 했을 때 사용.
-C_Network::Session::Session(SOCKET sock, SOCKADDR_IN* pSockAddr) : _socket(sock), _recvEvent(), _sendEvent(),_connectEvent(), _disconnEvent(),
-_netAddr(*pSockAddr), _sendFlag(0),_ioCount(0), _recvBuffer() //_isConnected(1),
+C_Network::Session::Session(SOCKET sock, SOCKADDR_IN* pSockAddr) : _socket(sock), _recvEvent(), _sendEvent(),_connectEvent(),
+_netAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0)
 {
 	InitializeSRWLock(&_sendBufferLock);
 
@@ -47,28 +40,6 @@ C_Network::Session::~Session()
 	}
 }
 
-void C_Network::Session::Init(SOCKET sock, SOCKADDR_IN* pSockAddr)
-{
-	_socket = sock;
-	_netAddr.Init(*pSockAddr);
-	//_isConnected = 1;
-	_recvBuffer.ClearBuffer();
-
-	
-	while (_sendBufferQ.size())
-	{
-		_sendBufferQ.pop();
-	}
-	_sendEvent._pendingBuffs.clear();
-
-	InterlockedExchange8(&_sendFlag, 0);
-	InterlockedExchange(&_ioCount, 0);
-
-	static  ULONGLONG sessionId = 0;
-
-	_sessionId = InterlockedIncrement(&sessionId);;
-}
-
 void C_Network::Session::Send(SharedSendBuffer sendBuf)
 {
 	{
@@ -79,15 +50,6 @@ void C_Network::Session::Send(SharedSendBuffer sendBuf)
 	PostSend();
 }
 
-bool C_Network::Session::CanDisconnect()
-{	
-	////char isConnected = InterlockedExchange8(&_isConnected, 0);
-	////if (!isConnected)
-	////	return;
-	
-	// true - Disconn, false - connecting.
-	return InterlockedDecrement(&_ioCount) == 0;
-}
 
 C_Network::NetworkErrorCode C_Network::Session::ProcessSend(DWORD transferredBytes)
 {
@@ -97,7 +59,10 @@ C_Network::NetworkErrorCode C_Network::Session::ProcessSend(DWORD transferredByt
 	InterlockedExchange8(&_sendFlag, 0);
 
 	if (transferredBytes == 0)
+	{
+		Disconnect(L"Send Transferred Bytes is 0");
 		return C_Network::NetworkErrorCode::SEND_LEN_ZERO;
+	}
 
 	PostSend();
 
@@ -128,42 +93,20 @@ bool C_Network::Session::ProcessAccept()
 bool C_Network::Session::ProcessDisconnect()
 {
 	// TODO : 이 부분은 비동기로 처리할 때 생각하도록 한다.
-	_disconnEvent._owner = nullptr;
+
 
 	return false;
 }
 
-//class TestLog
-//{
-//	static void SetData(LONGLONG data)
-//	{
-//		static bool b = false;
-//		
-//		if (!b)
-//		{
-//			b = true;
-//			InitializeSRWLock(&_logLock);
-//		}
-//
-//		AcquireSRWLockExclusive(&_logLock);
-//		dataSet.insert(data);
-//	}
-//public:
-//	static std::unordered_set<LONGLONG> dataSet;
-//	static SRWLOCK _logLock;
-//};
-// -----------------------------------------------------------------------------------------------------------------------
-// Post
+
 void C_Network::Session::PostSend()
 {
-	//if (!_isConnected)
-	//	return;
 
 	if (InterlockedExchange8(&_sendFlag, 1) == 1)
 		return;
 
 	_sendEvent.Reset();
-	_sendEvent._owner = this;
+	_sendEvent._owner = shared_from_this();
 
 	std::vector<WSABUF> wsabufs;
 	
@@ -204,6 +147,7 @@ void C_Network::Session::PostSend()
 	}
 
 	InterlockedIncrement(&_ioCount);
+
 	int sendRet = WSASend(_socket, wsabufs.data(), wsabufs.size(), nullptr, 0, reinterpret_cast<LPWSAOVERLAPPED>(&_sendEvent), nullptr);
 	
 	if (sendRet == SOCKET_ERROR)
@@ -213,25 +157,27 @@ void C_Network::Session::PostSend()
 		{
 			_sendEvent._owner = nullptr;
 			InterlockedDecrement(&_ioCount);
+
 			switch (wsaErr)
 			{
-			case 10053:break;
+			case 10053:;
 
 				// 사용자가 일방적으로 연결을 끊은 경우는 에러 출력을 하지 않도록 하겠다.  WSAECONNRESET
-			case 10054:break;
+			case 10054:;
+				break;
 			default:
 				printf("WSASend Error - [ errCode %d ]\n", wsaErr);
 				break;
 			}
 		}
 	}
-	
 }
 
 void C_Network::Session::PostRecv()
 {
+
 	_recvEvent.Reset();
-	_recvEvent._owner = this;
+	_recvEvent._owner = shared_from_this();
 
 	WSABUF buf[2];
 
@@ -252,7 +198,7 @@ void C_Network::Session::PostRecv()
 	DWORD flag = 0;
  	
 	InterlockedIncrement(&_ioCount);
-	int recvRet = WSARecv(_socket, buf, wsabufSize, nullptr, &flag, reinterpret_cast<LPWSAOVERLAPPED>(& _recvEvent), nullptr);
+	int recvRet = WSARecv(_socket, buf, wsabufSize, nullptr, &flag, reinterpret_cast<LPWSAOVERLAPPED>(&_recvEvent), nullptr);
 
 	if (recvRet == SOCKET_ERROR)
 	{
@@ -262,24 +208,47 @@ void C_Network::Session::PostRecv()
 		{
 			_recvEvent._owner = nullptr;
 			InterlockedDecrement(&_ioCount);
+
 			switch (wsaErr)
 			{
 				//
-			case 10053:break;
+			case 10053:
 				// 사용자가 일방적으로 연결을 끊은 경우는 에러 출력을 하지 않도록 하겠다. WSAECONNRESET
-			case 10054:break;
+			case 10054:
+				break;
 			default:
 				printf("WSASend Error - [ errCode %d ]\n", wsaErr);
 				break;
 			}
 		}
 	}
+
+
 }
 // --------------------------------------------------- ASynchronization ---------------------------------------------------
 void C_Network::Session::PostAccept()
 {
 	TODO_DEFINITION;
 	TODO_UPDATE_EX_LIST;
+}
+
+void C_Network::Session::Disconnect(const WCHAR* cause)
+{
+	std::wcout << cause << "\n";// (L"%s", cause);
+}
+
+bool C_Network::Session::CheckDisconnect()
+{
+	ULONG ioCount = InterlockedDecrement(&_ioCount);
+
+	//printf("CheckDisconn - ioCount : %d\n", ioCount);
+	if (ioCount == 0)
+	{
+		printf("DISCCONET [SESSION ID : %lld]", GetId());
+
+		return true;
+	}
+	return false;
 }
 
 
@@ -289,83 +258,78 @@ void C_Network::Session::PostConnect()
 	TODO_UPDATE_EX_LIST;
 }
 
-void C_Network::Session::PostDisconnect()
-{	TODO_DEFINITION;
-	TODO_UPDATE_EX_LIST;
-}
 // -----------------------------------------------------------------------------------------------------------------------
 
 
 
-/*--------------------------------------
-			Session Manager
---------------------------------------*/
-
-C_Network::SessionManager::SessionManager(uint maxSessionCnt) : C_Utility::ManagerPool<Session>(maxSessionCnt)
+SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle)
 {
-	InitializeSRWLock(&_sessionDicMapLock);
+	TODO_UPDATE_EX_LIST;
+	if (_sessionCnt == _maxSessionCnt)
+	{
+		C_Utility::Log(L"Session Count is Max"); TODO_LOG // Log 더 정확하게.
+
+		return nullptr;
+	}
+	_sessionCnt.fetch_add(1);
+
+	SharedSession newSession = std::make_shared<C_Network::Session>(sock, pSockAddr);
+
+	if (nullptr == CreateIoCompletionPort(reinterpret_cast<HANDLE>(sock), iocpHandle, 0, 0))
+	{
+		_sessionCnt.fetch_sub(1);
+
+		C_Utility::Log(L"Error.. Session Not Registed in Iocp "); TODO_LOG // Log 더 정확하게.
+			
+		return nullptr;
+	}
+	
+	ULONGLONG id = newSession->GetId();
+	
+	{
+		SRWLockGuard lockGuard(&_lock);
+		
+		_sessionToIdDic.insert(std::make_pair(newSession, id));
+		_idToSessionDic.insert(std::make_pair(id, newSession));
+	}
+
+
+	return newSession;
+} 
+
+void C_Network::SessionManager::DeleteSession(SharedSession session)
+{
+	ULONGLONG sessionId = session->GetId();
+
+	{
+		SRWLockGuard lockGuard(&_lock);
+		_sessionToIdDic.erase(session);
+		_idToSessionDic.erase(sessionId);
+	}
+	_sessionCnt.fetch_sub(1);
 }
 
 C_Network::SessionManager::~SessionManager()
-{}
-
-C_Network::Session* C_Network::SessionManager::AddSession(SOCKET sock, SOCKADDR_IN* pSockAddr)
-{   
-	// accept의 경우 꽉 찼을 때는 받지 않기 때문에. 꽉 찼을 경우를 생각할 필요는 없다.
-	uint idx = GetAvailableIndex();
+{
+	SRWLockGuard lockGuard(&_lock);
 	
-	C_Network::Session* newSession = _elementArr[idx];
-
-	newSession->Init(sock, pSockAddr);
-
-	ULONGLONG sessionId = newSession->GetId();
-
+	for (auto& pair : _sessionToIdDic)
 	{
-		SRWLockGuard lockGuard(&_sessionDicMapLock);
-		_idToIndexDic[sessionId] = idx;
-		_indexToIdDic[idx] = sessionId;
+		_idToSessionDic.erase(pair.second);
+		_sessionToIdDic.erase(pair.first);
 	}
-	InterlockedIncrement(&_curElementCnt);
-
-	return _elementArr[idx];
 }
 
-void C_Network::SessionManager::DeleteSession(Session* sessionPtr)
+SharedSession C_Network::SessionManager::GetSession(ULONGLONG sessionId)
 {
-	ULONGLONG sessionId = sessionPtr->GetId();
+	SRWSharedLockGuard lockGuard(&_lock);
 
-	uint arrIdx;
-	{
-		SRWLockGuard lockGuard(&_sessionDicMapLock);
-		arrIdx = _idToIndexDic[sessionId];
-		_idToIndexDic.erase(sessionId);
-		_indexToIdDic.erase(arrIdx);
-	}
-	closesocket(_elementArr[arrIdx]->GetSock());
-	
-	ObjectInitialize(arrIdx);
+	std::unordered_map<ULONGLONG, SharedSession>::iterator iter = _idToSessionDic.find(sessionId);
 
-	InterlockedDecrement(&_curElementCnt);
-}
-
-C_Network::Session* C_Network::SessionManager::GetSession(ULONGLONG sessionId)
-{
-	SRWLockGuard lockGuard(&_sessionDicMapLock);
-
-	// 수정 필요.
-	auto sessionIter = _idToIndexDic.find(sessionId);
-	if (sessionIter == _idToIndexDic.end())
+	if (iter != _idToSessionDic.end())
+		return iter->second;
+	else
 		return nullptr;
 
-	return _elementArr[sessionIter->second];//_sessionMap[sessionId];
-}
-
-
-// Client에서는 재연결하지 않기 때문에 
-void C_Network::ClientSessionManager::DeleteAllSession()
-{
-	for (C_Network::Session* session : _elementArr)
-	{
-		DeleteSession(session);
-	}
+	
 }

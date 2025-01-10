@@ -9,6 +9,15 @@ serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::P
 	return serialBuffer;
 }
 
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo)
+{
+	serialBuffer << roomInfo.ownerId << roomInfo.roomNum << roomInfo.curUserCnt << roomInfo.maxUserCnt;
+
+	serialBuffer.PutData(reinterpret_cast<char*>(roomInfo.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
+}
+
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo)
 {
 	serialBuffer >> roomInfo.ownerId >> roomInfo.roomNum >> roomInfo.curUserCnt >> roomInfo.maxUserCnt;
@@ -38,6 +47,13 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::Ma
 	serialBuffer << makeRoomRequestPacket.size << makeRoomRequestPacket.type;
 
 	serialBuffer.PutData(reinterpret_cast<char*>(makeRoomRequestPacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
+}
+
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomRequestPacket)
+{
+	serialBuffer << makeRoomRequestPacket.size << makeRoomRequestPacket.type << makeRoomRequestPacket.isMade;
 
 	return serialBuffer;
 }
@@ -82,6 +98,13 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Lo
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket)
 {
 	serialBuffer.GetData(reinterpret_cast<char*>(makeRoomResponsePacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
+}
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket)
+{
+	serialBuffer >> makeRoomResponsePacket.isMade;
 
 	return serialBuffer;
 }

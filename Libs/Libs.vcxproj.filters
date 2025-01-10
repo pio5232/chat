@@ -13,6 +13,9 @@
     <Filter Include="Contents">
       <UniqueIdentifier>{2117b99a-b2aa-45c5-8d4e-53ccf3db3ba5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Job">
+      <UniqueIdentifier>{984f31ff-096b-4fa9-92e3-eedef4cf6cb3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LibsPch.cpp">
@@ -78,14 +81,16 @@
     <ClCompile Include="CMonitor.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="ServerPacketHandler.cpp">
-      <Filter>Contents</Filter>
+    <ClCompile Include="GlobalInstance.cpp" />
+    <ClCompile Include="TLSInstance.cpp" />
+    <ClCompile Include="Job.cpp">
+      <Filter>Job</Filter>
     </ClCompile>
-    <ClCompile Include="ChattingClient.cpp">
-      <Filter>Contents</Filter>
+    <ClCompile Include="JobQueue.cpp">
+      <Filter>Job</Filter>
     </ClCompile>
-    <ClCompile Include="UITaskManager.cpp">
-      <Filter>Contents</Filter>
+    <ClCompile Include="GlobalQueue.cpp">
+      <Filter>Job</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -158,17 +163,19 @@
     <ClInclude Include="CMonitor.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="ServerPacketHandler.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
     <ClInclude Include="ErrorCode.h">
       <Filter>Contents</Filter>
     </ClInclude>
-    <ClInclude Include="ChattingClient.h">
-      <Filter>Contents</Filter>
+    <ClInclude Include="GlobalInstance.h" />
+    <ClInclude Include="TLSInstance.h" />
+    <ClInclude Include="Job.h">
+      <Filter>Job</Filter>
     </ClInclude>
-    <ClInclude Include="UITaskManager.h">
-      <Filter>Contents</Filter>
+    <ClInclude Include="JobQueue.h">
+      <Filter>Job</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalQueue.h">
+      <Filter>Job</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

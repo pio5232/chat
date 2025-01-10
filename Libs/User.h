@@ -12,14 +12,20 @@ namespace C_Network
 			ROOM,
 			IN_GAME,
 		};
-		User();
+		User(ULONGLONG userId, SharedSession sharedSession);// ULONGLONG sessionId);
 		
-		void InitInfo(ULONGLONG userId, ULONGLONG sessionId); // Initialize Info, TODO: 나중에 다른 정보가 .추가되어도 된다.
 
 		ULONGLONG GetUserId() const { return _userId; }
-		ULONGLONG GetSessionId() const { return _sessionId; }
+		ULONGLONG GetSessionId() const 
+		{ 
+			if (_mySession.expired())
+				return 0; // 실패
+
+			return _mySession.lock()->GetId(); 
+		}
 	private:
-		ULONGLONG _sessionId; // Session과 연결할 수 있는 수단. 이걸로 Network 작업을 요청한다.
+		std::weak_ptr<Session> _mySession;
+		//ULONGLONG _sessionId; // Session과 연결할 수 있는 수단. 이걸로 Network 작업을 요청한다.
 		ULONGLONG _userId;
 		WCHAR _nickName[USER_NAME_MAX_LEN]; // 유저 id
 		uint _winCnt;

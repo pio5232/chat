@@ -36,7 +36,8 @@ ErrorCode UITaskManager::PostUpdateUI(uint uMsg, WPARAM wParam, LPARAM lParam)
 	
 	if (!bRet) // PostMessage => 비동기로 메시지큐에 전달. SendMessage => 동기로 전달이 완료될 때까지 블락. 비동기로 전송하도록 한다.
 	{
-		std::cout << "PostUpdateUI Failed\n";
+		wprintf(L"PostUpdateUI Failed [GetLastError - %d]\n", GetLastError());
+
 		return ErrorCode::POST_UI_UPDATE_FAILED;
 	}
 
@@ -51,7 +52,8 @@ ErrorCode UITaskManager::DirectPostUpdateUI(UIHandle handleUI, uint wMsg, WPARAM
 
 	if (!bRet) 
 	{
-		std::cout << "PostUpdateUI Failed\n";
+		wprintf(L"DirectPostUpdateUI Failed [GetLastError - %d]\n", GetLastError());
+		
 		return ErrorCode::POST_UI_UPDATE_FAILED;
 	}
 

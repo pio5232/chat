@@ -37,58 +37,61 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGL
 
 	C_Network::SharedSendBuffer notifyBuffer = MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
 	
-	*notifyBuffer << packetHeader <<  _userMgr->GetUserBySessionId(sessionId)->GetUserId() << messageLen;
+	//*notifyBuffer << packetHeader <<  _userMgr->GetUserBySessionId(sessionId)->GetUserId() << messageLen;
 	notifyBuffer->PutData(reinterpret_cast<const char*>(payLoad), messageLen);
 
 	free(payLoad);
 
-	ErrorCode errCode = _roomMgr->SendToRoom(roomNum, notifyBuffer);
+	SharedRoom room = _roomMgr->GetRoom(roomNum);
 
-	return errCode;
-}
-
-ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
-{
-	C_Utility::Log(L" ChatToUser Request Recv");
-
-	ULONGLONG targetSessionId = 0;
-	uint16 messageLen = 0;
-
-	buffer >> targetSessionId >> messageLen;
-
-	char* payLoad = static_cast<char*>(malloc(messageLen));
-
-	buffer.GetData(payLoad, messageLen);
-
-	// TODO : Message 문자열 검사
-	// WCHAR* ~~~
-
-	PacketHeader packetHeader;
-
-	packetHeader.size = 0;
-	packetHeader.type = CHAT_TO_USER_RESPONSE_PACKET;
-
-	// --- ChatUserResponsePacket
-	C_Network::SharedSendBuffer responseBuffer = MakePacket(packetHeader);
-	_owner->Send(sessionId, responseBuffer);
-
-	// --- NotifyPacket
-	packetHeader.size = sizeof(sessionId) + sizeof(messageLen) + messageLen;
-	packetHeader.type = CHAT_NOTIFY_PACKET;
-
-	C_Network::SharedSendBuffer notifyBuffer = MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
-
-	*notifyBuffer << packetHeader << _userMgr->GetUserBySessionId(sessionId)->GetUserId() << messageLen;
-	notifyBuffer->PutData(reinterpret_cast<const char*>(payLoad), messageLen);
-
-	free(payLoad);
-
-	_owner->Send(targetSessionId, notifyBuffer);
+	room->DoAsync([]() {});
+	//ErrorCode errCode = _roomMgr->SendToRoom(roomNum, notifyBuffer);
 
 	return ErrorCode::NONE;
 }
 
-ErrorCode C_Network::ChattingClientPacketHandler::ProcessEnterRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
+ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
+{
+	//C_Utility::Log(L" ChatToUser Request Recv");
+
+	//ULONGLONG targetSessionId = 0;
+	//uint16 messageLen = 0;
+
+	//buffer >> targetSessionId >> messageLen;
+
+	//char* payLoad = static_cast<char*>(malloc(messageLen));
+
+	//buffer.GetData(payLoad, messageLen);
+
+	//// TODO : Message 문자열 검사
+	//// WCHAR* ~~~
+
+	//PacketHeader packetHeader;
+
+	//packetHeader.size = 0;
+	//packetHeader.type = CHAT_TO_USER_RESPONSE_PACKET;
+
+	//// --- ChatUserResponsePacket
+	//C_Network::SharedSendBuffer responseBuffer = MakePacket(packetHeader);
+	//_owner->Send(sessionId, responseBuffer);
+
+	//// --- NotifyPacket
+	//packetHeader.size = sizeof(sessionId) + sizeof(messageLen) + messageLen;
+	//packetHeader.type = CHAT_NOTIFY_PACKET;
+
+	//C_Network::SharedSendBuffer notifyBuffer = MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
+
+	//*notifyBuffer << packetHeader << _userMgr->GetUserBySessionId(sessionId)->GetUserId() << messageLen;
+	//notifyBuffer->PutData(reinterpret_cast<const char*>(payLoad), messageLen);
+
+	//free(payLoad);
+
+	//_owner->Send(targetSessionId, notifyBuffer);
+
+	return ErrorCode::NONE;
+}
+
+ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
 	C_Utility::Log(L" MakeRoom Request Recv");
 
@@ -100,69 +103,53 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessEnterRoomRequestPacket(
 
 	uint16 userId = _userMgr->GetUserBySessionId(sessionId)->GetUserId();
 
-	C_Network::Room* newRoom = _roomMgr->CreateRoom(userId, roomName);
+	SharedRoom newRoom = _roomMgr->CreateRoom(userId, roomName);
 		
-	C_Network::EnterRoomResponsePacket enterRoomResponsePacket;
+	//C_Network::EnterRoomResponsePacket enterRoomResponsePacket;
+	
+	ErrorCode ret = ErrorCode::NONE;
+
+	C_Network::MakeRoomResponsePacket makeRoomResponsePacket;
 	
 	if (!newRoom)
 	{
-		C_Network::SharedSendBuffer responsePacketBuffer = MakeSendBuffer(sizeof(enterRoomResponsePacket));
+		makeRoomResponsePacket.isMade = false;
 
-		enterRoomResponsePacket.bAllow = false;
+		printf("EnterRoom Response Packet Send -- [bAllow = false]");
 
-		*responsePacketBuffer << enterRoomResponsePacket;
-
-		_owner->Send(sessionId, responsePacketBuffer);
-
-		C_Utility::Log(L"EnterRoom Response Packet Send -- [bAllow = false]");
-
-		return ErrorCode::CREATE_ROOM_FAILED;
+		ret = ErrorCode::CREATE_ROOM_FAILED;
 	}
-
-	enterRoomResponsePacket.bAllow = true;
-
-	enterRoomResponsePacket.roomInfo.ownerId = newRoom->GetOwnerId();
-	enterRoomResponsePacket.roomInfo.curUserCnt = newRoom->GetCurUserCnt();
-	enterRoomResponsePacket.roomInfo.maxUserCnt = newRoom->GetMaxUserCnt();
-	wcscpy_s(enterRoomResponsePacket.roomInfo.roomName, static_cast<const WCHAR*>(newRoom->GetRoomNamePtr()));
-	enterRoomResponsePacket.roomInfo.roomNum = newRoom->GetRoomNum();
-
-	C_Network::SharedSendBuffer responsePacketBuffer = MakeSendBuffer(sizeof(enterRoomResponsePacket) + sizeof(C_Network::EnterRoomNotifyPacket));
+	else
+	{
+		makeRoomResponsePacket.isMade = true;
+	}
 	
-	*responsePacketBuffer << enterRoomResponsePacket;
-
-	C_Network::EnterRoomNotifyPacket enterNotifyPacket;
-
-	enterNotifyPacket.enterUserId = _userMgr->GetUserBySessionId(sessionId)->GetUserId();
-	
-	*responsePacketBuffer << enterNotifyPacket;
+	C_Network::SharedSendBuffer responsePacketBuffer = MakePacket(makeRoomResponsePacket); 
 
 	_owner->Send(sessionId, responsePacketBuffer);
 	
 	C_Utility::Log(L"EnterRoom Response Packet Send");
-	return ErrorCode::NONE;
+	return ret;
 }
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessRoomListRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
 	std::cout << "RoomList Request\n";
 
-	C_Network::User* userPtr = _userMgr->GetUserBySessionId(sessionId);
+	SharedUser userPtr = _userMgr->GetUserBySessionId(sessionId);
 
 	if (!userPtr)
 	{
 		C_Utility::Log(L"Room List Request Packet is Failed");
 		return ErrorCode::SESSION_USER_NOT_MAPPED;
-	}// User의 정보를 확인한 후 정상적인 상태에 있는 유저라면
-
-	// RoomMgr에게 그 유저에게 정보를 보내라고 한다.
+	}
 
 	// TODO : use Pool
-	C_Network::SharedSendBuffer sendBuffer = MakeSendBuffer(sizeof(RoomListResponsePacket) + _roomMgr->GetCurElementCount() * sizeof(RoomInfo));
-
-	ErrorCode errCode = _roomMgr->SendToUserRoomInfo(sessionId, sendBuffer);
+	ErrorCode errCode = _roomMgr->SendToUserRoomInfo(sessionId);
 
 	return errCode;
+
+	return ErrorCode::NONE;
 }
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessLogInPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
@@ -190,7 +177,10 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLogInPacket(ULONGLONG s
 	clientResponsePacket.userId = userId;
 
 	// TODO : userId, sessionId 등 userInfo를 채워서 user를 생성해야한다. 현재는 userId와 sessionId만을 기입해놓는다.
-	_userMgr->AddUser(userId,sessionId);
+	
+	SharedSession sharedSession = _sessionMgr->GetSession(sessionId);
+
+	_userMgr->CreateUser(userId, sharedSession);
 
 	C_Network::SharedSendBuffer sendBuffer = MakePacket(clientResponsePacket);
 

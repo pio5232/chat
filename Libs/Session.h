@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-
 namespace C_Network
 {
 	/*----------------------
@@ -18,7 +17,6 @@ namespace C_Network
 		Connect,
 		Recv,
 		Send,
-		Disconnect,
 		EventMax,
 		// PreRecv, 0 byte Recv
 	};
@@ -28,8 +26,8 @@ namespace C_Network
 	public:
 		IocpEvent(IocpEventType type);
 		void Reset();
-
-		class Session* _owner;
+		 
+		SharedSession _owner;
 
 		const IocpEventType _type;
 	};
@@ -54,26 +52,17 @@ namespace C_Network
 		ConnectEvent() : IocpEvent(IocpEventType::Connect) {}
 	};
 
-	struct DisconnectEvent : public IocpEvent
-	{
-	public:
-		DisconnectEvent() : IocpEvent(IocpEventType::Disconnect) {}
-	};
-
 
 	/*------------------------------
 				Session 
 	------------------------------*/
-	struct Session 
+	struct Session : public std::enable_shared_from_this<Session>
 	{
 	public:
-		Session();
 		Session(SOCKET sock, SOCKADDR_IN* pSockAddr);
 		~Session();
 
-		void Init(SOCKET sock, SOCKADDR_IN* pSockAddr);
 		void Send(SharedSendBuffer sendBuf);
-		bool CanDisconnect(); // true - Disconn, false - connecting.
 
 		//bool ProcessRecv(DWORD transferredBytes);
 		C_Network::NetworkErrorCode ProcessSend(DWORD transferredBytes);
@@ -89,8 +78,11 @@ namespace C_Network
 		void PostSend();
 		void PostRecv();
 		void PostConnect();
-		void PostDisconnect();
 		void PostAccept();
+
+		void Disconnect(const WCHAR* cause);
+
+		bool CheckDisconnect();
 
 	private:
 
@@ -101,67 +93,41 @@ namespace C_Network
 
 		std::queue<SharedSendBuffer> _sendBufferQ;
 
-		//volatile char _isConnected;
 		volatile char _sendFlag; // Use - 1, unUse - 0
+	public:
 	    volatile ULONG _ioCount;
 	public:
 		C_Utility::CRingBuffer _recvBuffer;
 		RecvEvent _recvEvent;
 		SendEvent _sendEvent;
 		ConnectEvent _connectEvent;
-		DisconnectEvent _disconnEvent;
-
 
 	};
 
 
-	/*--------------------------------------
-				Session Manager
-	--------------------------------------*/
-
-	class SessionManager : public C_Utility::ManagerPool<Session>
+	class SessionManager
 	{
 	public:
-		SessionManager(uint maxSessionCnt);
+		SessionManager(uint maxSessionCnt) : _sessionCnt(0), _maxSessionCnt(maxSessionCnt) { InitializeSRWLock(&_lock); _sessionToIdDic.reserve(maxSessionCnt); _idToSessionDic.reserve(maxSessionCnt); }
 		virtual ~SessionManager() = 0;
-		Session* AddSession(SOCKET sock, SOCKADDR_IN* pSockAddr);
-		void DeleteSession(Session* sessionPtr);
-		
-		Session* GetSession(ULONGLONG sessionId); // sessionId로 session을 찾는다.
+
+		SharedSession CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle);
+		void DeleteSession(SharedSession session);
+
+		SharedSession GetSession(ULONGLONG sessionId);
 
 	protected:
-		// [ Server - User Count / Client - Dummy Count], <id, index>
-		std::unordered_map<ULONGLONG, uint> _idToIndexDic; 
-		std::unordered_map<uint, ULONGLONG> _indexToIdDic;
-
-		SRWLOCK _sessionDicMapLock;
-
+		SRWLOCK _lock;
+		std::unordered_map<SharedSession, ULONGLONG> _sessionToIdDic; // Session -> sessionId
+		std::unordered_map<ULONGLONG, SharedSession> _idToSessionDic; // sessionId -> Session
+		std::atomic<uint> _sessionCnt;
+		const uint _maxSessionCnt;
 	};
+
 	class ServerSessionManager : public SessionManager
 	{
 	public: ServerSessionManager(uint maxSessionCnt) : SessionManager(maxSessionCnt) {}
 		  ~ServerSessionManager() {}
 	};
 
-	class ClientSessionManager : public SessionManager
-	{
-	public: ClientSessionManager(uint maxSessionCnt) : SessionManager(maxSessionCnt) {}
-		  ~ClientSessionManager() {}
-
-		  bool GetMySessionId(OUT ULONGLONG& sessionId)
-		  {
-			  if (_maxElementCnt > 1)
-				  return false;
-
-			  //auto& [id, index] = *_idToIndexDic.begin();
-			  auto& iter = *_idToIndexDic.begin();
-
-			  sessionId = iter.first;
-
-			  return true;
-		  }
-		  void DeleteAllSession();
-	private:
-		
-	};
 }

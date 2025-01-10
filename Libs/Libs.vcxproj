@@ -20,13 +20,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="ChattingClient.h" />
     <ClInclude Include="ChattingServer.h" />
     <ClInclude Include="CMonitor.h" />
     <ClInclude Include="CRingBuffer.h" />
     <ClInclude Include="CSerializationBuffer.h" />
     <ClInclude Include="EchoServer.h" />
     <ClInclude Include="ErrorCode.h" />
+    <ClInclude Include="GlobalInstance.h" />
+    <ClInclude Include="GlobalQueue.h" />
+    <ClInclude Include="Job.h" />
+    <ClInclude Include="JobQueue.h" />
     <ClInclude Include="NetworkBase.h" />
     <ClInclude Include="CLog.h" />
     <ClInclude Include="Define.h" />
@@ -39,10 +42,9 @@
     <ClInclude Include="ClientPacketHandler.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="RoomManager.h" />
-    <ClInclude Include="ServerPacketHandler.h" />
     <ClInclude Include="Session.h" />
+    <ClInclude Include="TLSInstance.h" />
     <ClInclude Include="TlsProfiler.h" />
-    <ClInclude Include="UITaskManager.h" />
     <ClInclude Include="User.h" />
     <ClInclude Include="UserManager.h" />
     <ClInclude Include="Utils.h" />
@@ -54,12 +56,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ChattingClient.cpp" />
     <ClCompile Include="ChattingServer.cpp" />
     <ClCompile Include="CMonitor.cpp" />
     <ClCompile Include="CRingBuffer.cpp" />
     <ClCompile Include="CSerializationBuffer.cpp" />
     <ClCompile Include="EchoServer.cpp" />
+    <ClCompile Include="GlobalInstance.cpp" />
+    <ClCompile Include="GlobalQueue.cpp" />
+    <ClCompile Include="Job.cpp" />
+    <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="NetworkBase.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LibsPch.h</PrecompiledHeaderFile>
@@ -104,20 +109,19 @@
     <ClCompile Include="PacketDefine.cpp" />
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="RoomManager.cpp" />
-    <ClCompile Include="ServerPacketHandler.cpp" />
     <ClCompile Include="Session.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">LibsPch.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="TLSInstance.cpp" />
     <ClCompile Include="TlsProfiler.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">LibsPch.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="UITaskManager.cpp" />
     <ClCompile Include="User.cpp" />
     <ClCompile Include="UserManager.cpp" />
     <ClCompile Include="Utils.cpp">

@@ -4,6 +4,7 @@
 #include "CCrashDump.h"
 #include "CLog.h"
 #include <stack>
+#include <queue>
 /*-------RAII--------
 	  LockGuard
 -------------------*/
@@ -11,10 +12,21 @@
 class SRWLockGuard
 {
 public:
-	SRWLockGuard(SRWLOCK* pLock) : _pLock(pLock) { AcquireSRWLockExclusive(_pLock); }
-	~SRWLockGuard() { ReleaseSRWLockExclusive(_pLock); }
+	SRWLockGuard(SRWLOCK* lock) : _lock(lock) { AcquireSRWLockExclusive(_lock); }
+	~SRWLockGuard() { ReleaseSRWLockExclusive(_lock); }
 
-	SRWLOCK* _pLock;
+	SRWLOCK* _lock;
+};
+
+class SRWSharedLockGuard
+{
+public:
+	SRWSharedLockGuard(SRWLOCK* lock) : _lock(lock) { AcquireSRWLockShared(_lock); }
+	~SRWSharedLockGuard() { ReleaseSRWLockShared(_lock); }
+
+private:
+	SRWLOCK* _lock;
+
 };
 
 
@@ -84,4 +96,57 @@ namespace C_Utility
 	ManagerPool<T, Args...>::~ManagerPool()
 	{
 	}
+
+	template <typename T>
+	class LockQueue {
+	public:
+		LockQueue()
+		{
+			InitializeSRWLock(&_lock);
+		}
+		void Push(T job)
+		{
+			SRWLockGuard lockGuard(&_lock);
+
+			_queue.push(job);
+		}
+
+		T Pop()
+		{
+			SRWLockGuard lockGuard(&_lock);
+			if (_queue.size() > 0)
+			{
+				T ret = _queue.front();
+				_queue.pop();
+				
+				return ret;
+			}
+			
+			return nullptr;
+		}
+
+		void PopAll(OUT std::vector<T>& vec)
+		{
+			SRWLockGuard lockGuard(&_lock);
+
+			while (_queue.size() > 0)
+			{
+				T ele = _queue.front();
+				_queue.pop();
+
+				vec.push_back(ele);
+			}
+		}
+
+		void Clear()
+		{
+			SRWLockGuard lockGuard(&_lock);
+			
+			_queue = std::queue<T>();
+			
+		}
+	private:
+		SRWLOCK _lock;
+		std::queue<T> _queue;
+	};
 }

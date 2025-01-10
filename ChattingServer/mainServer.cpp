@@ -8,7 +8,7 @@
 #include <conio.h>
 
 using namespace C_Network;
-ChattingServer server(NetAddress(std::wstring(L"192.168.0.10"),ServerPort),6000);
+ChattingServer server(NetAddress(std::wstring(L"127.0.0.1"),ServerPort),6000);
 
 int main()
 {

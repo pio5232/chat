@@ -27,7 +27,7 @@ namespace C_Network
 		ROOM_LIST_RESPONSE_PACKET,
 
 		MAKE_ROOM_REQUEST_PACKET,
-		// MAKE_ROOM_RESPONSE_PACKET, -> ENTER_ROOM_RESPONSE_PACKET으로 RESPONSE를 보냄.
+		MAKE_ROOM_RESPONSE_PACKET, // -> ENTER_ROOM_RESPONSE_PACKET으로 RESPONSE를 보냄.
 
 		ENTER_ROOM_REQUEST_PACKET,
 		ENTER_ROOM_RESPONSE_PACKET,
@@ -38,6 +38,7 @@ namespace C_Network
 		LEAVE_ROOM_NOTIFY_PACKET,
 
 		CLIENT_LOG_OUT_PACKET,
+		CLIENT_LOG_OUT_NOTIFY_PACKET,
 
 		// 클라이언트의 요청
 		CHAT_TO_ROOM_REQUEST_PACKET, // 방 안의 유저에게 메시지 전송 요청, RoomNum이 -1이면 모든 방에 전송.
@@ -60,16 +61,6 @@ namespace C_Network
 		PACKET_SIZE_ECHO = 10,
 
 		PACKET_SIZE_MAX = 500,
-	};
-
-	struct RoomInfo
-	{
-		static uint16 GetSize() { return sizeof(ownerId) + sizeof(roomNum) + sizeof(curUserCnt) + sizeof(maxUserCnt) + sizeof(roomName); }
-		ULONGLONG ownerId;
-		uint16 roomNum;
-		uint16 curUserCnt;
-		uint16 maxUserCnt;
-		WCHAR roomName[ROOM_NAME_MAX_LEN];
 	};
 
 	// size = payload의 size
@@ -107,7 +98,7 @@ namespace C_Network
 	public:
 		uint16 roomNum = UINT16_MAX;
 		uint16 messageLen = 0;
-		WCHAR payLoad[MESSAGE_MAX_LEN];
+		WCHAR payLoad[0];
 	};
 	
 	// head만 존재.
@@ -134,7 +125,8 @@ namespace C_Network
 	{
 	public :
 		ULONGLONG sendUserId = 0;
-		WCHAR payLoad[MESSAGE_MAX_LEN];
+		uint16 messageLen = 0;
+		WCHAR payLoad[0];
 	};
 	// LOG_IN
 	// 암호화.. 복호화?
@@ -162,10 +154,22 @@ namespace C_Network
 
 	};
 
+	struct LogOutNotifyPacket : PacketHeader
+	{
+		LogOutNotifyPacket() { size = sizeof(userId); type = CLIENT_LOG_OUT_NOTIFY_PACKET; }
+		ULONGLONG userId = 0;
+	};
+
 	struct MakeRoomRequestPacket : public PacketHeader
 	{
 		MakeRoomRequestPacket() { size = sizeof(roomName); type = MAKE_ROOM_REQUEST_PACKET; }
 		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
+	};
+
+	struct MakeRoomResponsePacket : public PacketHeader
+	{
+		MakeRoomResponsePacket() { size = sizeof(isMade); type = MAKE_ROOM_RESPONSE_PACKET; }
+		bool isMade = false;
 	};
 
 	struct alignas (64) EnterRoomResponsePacket : public PacketHeader
@@ -214,12 +218,14 @@ namespace C_Network
 // Only Has Head Packet
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::PacketHeader& packetHeader);
 
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
 ;
 // Packet 정의할 때 패킷에 맞는 직렬화버퍼 << operator를 정의해줘야한다, PacketHeader의 사이즈 계산은 해놓은 상태여야한다!  operator << >> 는 입력 / 출력만 행할 뿐이다.
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomRequestPacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket);
 
@@ -227,6 +233,7 @@ serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::E
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket);
 

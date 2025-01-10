@@ -1,5 +1,5 @@
 #pragma once
-
+#include <MSWSock.h>
 namespace C_Network
 {
 	enum : uint

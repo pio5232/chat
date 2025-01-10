@@ -3,24 +3,16 @@
 
 #include <sstream>
 
-C_Network::User::User()
+C_Network::User::User(ULONGLONG userId, SharedSession sharedSession) : _userId(userId), _winCnt(0),_loseCnt(0), _mySession(sharedSession) // , _sessionId(sessionId)
 {
-}
+	static volatile ULONG nickGenerator = 1;
 
-void C_Network::User::InitInfo(ULONGLONG userId, ULONGLONG sessionId)
-{
-	_winCnt = 0;
-	_loseCnt = 0;
-
-	static ULONGLONG nickGenerator = 1;
-	nickGenerator++;
+	ULONG genNum = InterlockedIncrement(&nickGenerator);
 
 	std::wstringstream stream;
 
-	stream << L"切疑持失" << nickGenerator;
+	stream << L"切疑持失" << genNum;
 
 	wcscpy_s(_nickName, stream.str().c_str());
 
-	_userId = userId;
-	_sessionId = sessionId;
 }

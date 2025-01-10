@@ -42,9 +42,10 @@ IN_ADDR C_Network::NetAddress::IpToAddr(const WCHAR* ip)
 	return addr;
 }
 
+/*------------------------
+		 Recv Buff
+------------------------*/
 C_Network::RecvBuffer::RecvBuffer() : _readPos(0), _writePos(0), _buffer{} {}
-
-thread_local C_Network::SharedSendBufChunk sendBufChunks;
 
 void C_Network::RecvBuffer::Reset()
 {
@@ -84,3 +85,4 @@ bool C_Network::RecvBuffer::MoveWritePos(uint len)
 	_writePos += len;
 	return true;
 }
+

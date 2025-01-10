@@ -4,7 +4,6 @@
 
 C_Network::ChattingServer::ChattingServer(const NetAddress& netAddr, uint maxSessionCnt) : ServerBase(netAddr, maxSessionCnt)
 {
-
 	const uint roomCnt = 20;
 	
 	uint maxRoomUserCnt = maxSessionCnt / roomCnt;
@@ -13,9 +12,10 @@ C_Network::ChattingServer::ChattingServer(const NetAddress& netAddr, uint maxSes
 	
 	_userMgr = std::make_unique<UserManager>(maxSessionCnt);
 	_roomMgr = std::make_unique<RoomManager>(this, roomCnt, maxRoomUserCnt,_userMgr.get());
-	
-	// TODO : USE POOL, 스마트 포인터에 대해서도 pool을 적용할 수 있다면 좋을 것임.
-	_packetHandler = new ChattingClientPacketHandler(this, _roomMgr.get(), _userMgr.get());
+
+	//_monitor = std::make_unique<C_Utility::ChatMonitor>(_roomMgr.get(), _userMgr.get());
+			// TODO : USE POOL, 스마트 포인터에 대해서도 pool을 적용할 수 있다면 좋을 것임.
+	_packetHandler = new ChattingClientPacketHandler(this, _roomMgr.get(), _userMgr.get(), _sessionMgr.get());
 }
 
 C_Network::ChattingServer::~ChattingServer()
@@ -34,6 +34,7 @@ void C_Network::ChattingServer::OnConnected(const SOCKADDR_IN& clientInfo, ULONG
 
 void C_Network::ChattingServer::OnDisconnected(ULONGLONG sessionId)
 {
+	_userMgr->DeleteUser(sessionId);
 	// TODO : 해당 세션의 user Id 를 찾아서 데이터 저장 및 제거 필요.
 }
 

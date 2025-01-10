@@ -1,10 +1,7 @@
 #include "LibsPch.h"
 #include "CMonitor.h"
-#include "Session.h"
-
-C_Utility::CMonitor::CMonitor() 
-{
-}
+#include "RoomManager.h"
+#include "UserManager.h"
 
 C_Utility::CMonitor::~CMonitor() 
 {
@@ -12,6 +9,7 @@ C_Utility::CMonitor::~CMonitor()
 
 void C_Utility::CMonitor::Begin()
 {
+	
 	_monitoringFlag = true;
 	
 	_monitorThread = std::thread([&]() {this->ProcessMonitoring(); });
@@ -29,10 +27,19 @@ void C_Utility::CMonitor::End()
 	return;
 }
 
-void C_Utility::CMonitor::ProcessMonitoring() {
+void C_Utility::CMonitor::ProcessMonitoring() 
+{
+	while (_monitoringFlag)
+	{
+		MonitoringJob();
+
+		printf("\n");
+
+		Sleep(1000);
+	}
 }
 
-void C_Utility::NetMonitor::ProcessMonitoring()
+void C_Utility::NetMonitor::MonitoringJob()
 {
 	//while (_monitoringFlag)
 	//{
@@ -48,3 +55,22 @@ void C_Utility::NetMonitor::ProcessMonitoring()
 	//}
 	return;
 }
+
+
+//void C_Utility::ChatMonitor::MonitoringJob()
+//{
+	//printf("[ Current User Count : %u ] \n", _userMgr->GetCurElementCount());
+
+	//C_Network::RoomManager* rm = new C_Network::RoomManager(nullptr, 1, 2, nullptr);
+
+	//{
+	//	SRWLockGuard lockGuard(const_cast<SRWLOCK*>(&_roomMgr->_lock));
+
+	//	for (auto& pair : _roomMgr->_roomMap)
+	//	{
+	//		C_Network::Room* room = pair.second;
+	//		printf("[ Room Num : %u / ÀÎ¿ø : (%u / %u) / Owner Id : %llu / Title : %s ]\n", room->GetRoomNum(), room->GetCurUserCnt(), room->GetMaxUserCnt(), room->GetOwnerId(), room->GetRoomNamePtr());
+	//	}
+	//}
+	//return;
+//}

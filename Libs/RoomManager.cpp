@@ -2,105 +2,115 @@
 #include "RoomManager.h"
 #include "NetworkBase.h"
 #include "UserManager.h"
+#include "ClientPacketHandler.h"
 
-C_Network::RoomManager::RoomManager(C_Network::ServerBase* owner, uint16 maxRoomCount, uint16 maxRoomUserCnt, UserManager* userMgr) : 
-	C_Utility::ManagerPool<Room, ServerBase*, uint16, UserManager*>(maxRoomCount, owner, maxRoomUserCnt, userMgr),_owner(owner), _maxRoomUserCnt(maxRoomUserCnt)
+C_Network::RoomManager::RoomManager(C_Network::ServerBase* owner, uint16 maxRoomCount, uint16 maxRoomUserCnt, UserManager* userMgr) : _owner(owner), _maxRoomCnt(maxRoomCount), _maxRoomUserCnt(maxRoomUserCnt), _userMgr(userMgr),_roomCnt(0)
 {
-	InitializeSRWLock(&_roomDicLock);
+	InitializeSRWLock(&_lock);
 
-	_usingRoomDic.reserve(maxRoomCount);
+	_roomMap.reserve(maxRoomCount);
 
-	//for (int i = 0; i < maxRoomCount; i++)
-	//{
-	//	// TODO : ROOM POOL 사용
-	//	Room* room = new Room(_owner, _maxRoomUserCnt, 0);
-
-	//	_roomList.push_back(room);
-	//}
 }
 
 C_Network::RoomManager::~RoomManager()
 {}
 
-ErrorCode C_Network::RoomManager::SendToUserRoomInfo(ULONGLONG sessionId, C_Network::SharedSendBuffer& buffer)
+ErrorCode C_Network::RoomManager::SendToUserRoomInfo(ULONGLONG sessionId)
 {
 	// RoomListResponsePacket
 
+	std::vector<std::weak_ptr<Room>> lazyProcBuf;
+
+	{
+		SRWLockGuard lockGuard(&_lock);
+
+		for (auto& roomPair : _roomMap)
+		{
+			lazyProcBuf.push_back(roomPair.second);
+		}
+	}
+
+	uint16 roomCnt = lazyProcBuf.size();
+
 	PacketHeader header;
-	uint16 curRoomCnt = _usingRoomDic.size();//_curElementCnt;
-	header.size = sizeof(curRoomCnt) + curRoomCnt * RoomInfo::GetSize();;
+	header.size = sizeof(roomCnt) + roomCnt * RoomInfo::GetSize();;
 	header.type = ROOM_LIST_RESPONSE_PACKET;
+	
+	C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakeSendBuffer(sizeof(RoomListResponsePacket) + roomCnt * sizeof(RoomInfo));
 
-	*buffer << header << curRoomCnt;
+	*sendBuffer << header << roomCnt;
 
+	for (std::weak_ptr<Room>& weakPtrRoom : lazyProcBuf)
 	{
-		SRWLockGuard lockGuard(&_roomDicLock);
-		
-		for (auto& roomPair : _usingRoomDic)
+		if (false == weakPtrRoom.expired())
 		{
-			Room* roomPtr = roomPair.second;
+			SharedRoom sharedRoom = weakPtrRoom.lock();
 
-			*buffer << roomPtr->GetOwnerId() << roomPtr->GetRoomNum() << roomPtr->GetCurUserCnt() << roomPtr->GetMaxUserCnt();
-			buffer->PutData(static_cast<const char*>(roomPtr->GetRoomNamePtr()), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+			*sendBuffer << sharedRoom->GetOwnerId() << sharedRoom->GetRoomNum() << sharedRoom->GetCurUserCnt() << sharedRoom->GetMaxUserCnt();
+			sendBuffer->PutData(static_cast<const char*>(sharedRoom->GetRoomNamePtr()), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
 		}
 	}
-	_owner->Send(sessionId, buffer);
+
+	_owner->Send(sessionId, sendBuffer);
 
 	return ErrorCode::NONE;
 }
 
-C_Network::Room* C_Network::RoomManager::CreateRoom(uint16 ownerUserId, WCHAR* roomName)
+SharedRoom C_Network::RoomManager::CreateRoom(ULONGLONG ownerUserId, WCHAR* roomName)
 {
-	uint idx = GetAvailableIndex();
-
-	if (idx == UINT_MAX)
-	{
-		//return ErrorCode::MAX_ROOM;
-		C_Utility::Log(L" CreateRoom is Failed : MAX_ROOM");
+	if (_roomCnt.load() == _maxRoomCnt)
 		return nullptr;
-	}
-		
-	C_Network::Room* newRoom = _elementArr[idx];
 
-	newRoom->InitRoomInfo(ownerUserId, roomName);
+	_roomCnt.fetch_add(1);
+
+	static volatile uint16 roomNumGen = 0;
+	uint16 roomNum = InterlockedIncrement16((short*)&roomNumGen);
+
+	SharedRoom sharedRoom = std::make_shared<C_Network::Room>(_owner, _userMgr, ownerUserId, _maxRoomUserCnt, roomNum, roomName);
 
 	{
-		SRWLockGuard lockGuard(&_roomDicLock);
-		uint16 roomNum = newRoom->GetRoomNum();
-		auto curRoom = _usingRoomDic.find(roomNum);// 존재하면 안된다.
-		if (curRoom != _usingRoomDic.end())
-		{
-			C_Utility::Log(L"CreateRoom is Failed : Already Exist Room");
-			return nullptr;
-			//return ErrorCode::ALREADY_EXIST_ROOM;
-		}
-		_usingRoomDic[roomNum] = newRoom;
+		SRWLockGuard lockGuard(&_lock);
+		_roomMap.insert(std::pair(ownerUserId, sharedRoom));
 	}
+	sharedRoom->DoAsync(&Room::EnterRoom, ownerUserId);
 
-	InterlockedIncrement(&_curElementCnt);
-
-	return newRoom;
+	return sharedRoom;
 }
 
-ErrorCode C_Network::RoomManager::SendToAllUser(SharedSendBuffer& sendBuffer)
+void C_Network::RoomManager::DeleteRoom(uint16 roomNum)
 {
-	for (auto& pair : _usingRoomDic)
+	uint delSize = 0;
 	{
-		pair.second->SendToAll(sendBuffer);
+		SRWLockGuard lockGuard(&_lock);
+		delSize = _roomMap.erase(roomNum);
 	}
-
-	return ErrorCode::NONE;
+	if (0 == delSize)
+	{
+		TODO_LOG_ERROR;
+		printf("Delete Room is not exist.. %u\n", roomNum);
+		return;
+	}
 }
 
-ErrorCode C_Network::RoomManager::SendToRoom(uint16 roomNum, SharedSendBuffer& sendBuffer)
-{
-	// find
-	std::unordered_map<uint16, Room*>::iterator iter = _usingRoomDic.find(roomNum);
+//ErrorCode C_Network::RoomManager::SendToAllUser(SharedSendBuffer& sendBuffer)
+//{
+//	for (auto& pair : _roomMap)
+//	{
+//		pair.second->SendToAll(sendBuffer);
+//	}
+//
+//	return ErrorCode::NONE;
+//}
 
-	if (iter == _usingRoomDic.end())
-		return ErrorCode::CANNOT_FIND_ROOM;
-
-	iter->second->SendToAll(sendBuffer);
-
-	return ErrorCode::NONE;
-}
+//ErrorCode C_Network::RoomManager::SendToRoom(uint16 roomNum, SharedSendBuffer& sendBuffer)
+//{
+//	// find
+//	std::unordered_map<uint16, Room*>::iterator iter = _roomMap.find(roomNum);
+//
+//	if (iter == _roomMap.end())
+//		return ErrorCode::CANNOT_FIND_ROOM;
+//
+//	iter->second->SendToAll(sendBuffer);
+//
+//	return ErrorCode::NONE;
+//}

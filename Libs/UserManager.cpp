@@ -1,86 +1,79 @@
 #include "LibsPch.h"
 #include "UserManager.h"
 
-C_Network::UserManager::UserManager(uint maxUserCnt) : C_Utility::ManagerPool<User>(maxUserCnt)
+C_Network::UserManager::UserManager(uint maxSessionCnt) 
 {
-	InitializeSRWLock(&_sessionDicMapLock);
-	InitializeSRWLock(&_userDicMapLock);
+	InitializeSRWLock(&_lock);
+
+	_sessionIdToUserMap.reserve(maxSessionCnt);
+	_userIdToUserMap.reserve(maxSessionCnt);
 }
 
 C_Network::UserManager::~UserManager()
 {
-	C_Utility::ManagerPool<User>::~ManagerPool();
+	
 }
 
-C_Network::User* C_Network::UserManager::AddUser(ULONGLONG userId, ULONGLONG sessionId)
+SharedUser C_Network::UserManager::CreateUser(ULONGLONG userId, SharedSession sharedSession) // ULONGLONG sessionId)
 {
-	// session이 다 꽉 차면 받지 않으니까 ( user < session ) 이기 때문에 걱정하지 않는다.
-	uint idx = GetAvailableIndex();
+	// 어차피 maxSession보다 크면 session 레벨에서 끊을 것이기 때문에 제한 생각 x
+	SharedUser sharedUser = std::make_shared<C_Network::User>(userId, sharedSession);
 
-	C_Network::User* newUser = _elementArr[idx];
-
-	newUser->InitInfo(userId, sessionId);
-
+	ULONGLONG sessionId = sharedUser->GetSessionId();
 	{
-		SRWLockGuard lockGuard(&_sessionDicMapLock);
-		_sessionToUserIdxMap[sessionId] = idx;
+		SRWLockGuard lockGuard(&_lock);
+		
+		_sessionIdToUserMap.insert(std::make_pair(sessionId, sharedUser));
+		_sessionIdToUserMap.insert(std::make_pair(userId, sharedUser));
 	}
-	{
-		SRWLockGuard lockGuard(&_userDicMapLock);
-		_userIdToUserIdxMap[userId] = idx;
-	}
-	InterlockedIncrement(&_curElementCnt);
 
-	return newUser;// _elementArr[idx];
+	return sharedUser;// _elementArr[idx];
 }
 
 ErrorCode C_Network::UserManager::DeleteUser(ULONGLONG userId)
 {
-	uint arrIdx;
-	{	
-		SRWLockGuard lockGuard(&_userDicMapLock);
-
-		auto userIter = _userIdToUserIdxMap.find(userId);
-		if (userIter == _userIdToUserIdxMap.end())
-			return ErrorCode::SESSION_USER_NOT_MAPPED;
-
-		arrIdx = userIter->second; // index;
+	SRWLockGuard lockGuard(&_lock);
 	
-		_userIdToUserIdxMap.erase(userId);
-	}
-
-	ULONGLONG sessionId = _elementArr[arrIdx]->GetSessionId();
-	{
-		SRWLockGuard lockGuard(&_sessionDicMapLock);
-		_sessionToUserIdxMap.erase(sessionId);
-	}
+	auto userMapiter = _userIdToUserMap.find(userId);
 	
-	ObjectInitialize(arrIdx);
+	if (_userIdToUserMap.end() == userMapiter)
+		return ErrorCode::SESSION_USER_NOT_MAPPED;
 
-	wprintf(L"[%u User Delete. User id = %llu, \n", arrIdx, userId);
+	ULONGLONG sessionId = userMapiter->second->GetSessionId();
+
+	_userIdToUserMap.erase(userMapiter);
+
+	auto sessionMapIter = _sessionIdToUserMap.find(sessionId);
+
+	if (_sessionIdToUserMap.end() == sessionMapIter)
+		return ErrorCode::SESSION_USER_NOT_MAPPED;
+
+	_sessionIdToUserMap.erase(sessionMapIter);
+
+	printf("[User Delete. User id = %llu, \n", userId);
 
 	return ErrorCode::NONE;
 }
 
 
-C_Network::User* C_Network::UserManager::GetUserBySessionId(ULONGLONG sessionId)
+SharedUser C_Network::UserManager::GetUserBySessionId(ULONGLONG sessionId)
 {
-	SRWLockGuard lockGuard(&_sessionDicMapLock);
+	SRWSharedLockGuard lockGuard(&_lock);
 
-	auto userIter = _sessionToUserIdxMap.find(sessionId);
-	if (userIter == _sessionToUserIdxMap.end())
+	auto userIter = _sessionIdToUserMap.find(sessionId);
+	if (userIter == _sessionIdToUserMap.end())
 		return nullptr;
 
-	return _elementArr[userIter->second];
+	return userIter->second;
 }
 
-C_Network::User* C_Network::UserManager::GetUserByUserId(ULONGLONG userId)
+SharedUser C_Network::UserManager::GetUserByUserId(ULONGLONG userId)
 {
-	SRWLockGuard lockGuard(&_userDicMapLock);
+	SRWSharedLockGuard lockGuard(&_lock);
 
-	auto userIter = _userIdToUserIdxMap.find(userId);
-	if (userIter == _userIdToUserIdxMap.end())
+	auto userIter = _userIdToUserMap.find(userId);
+	if (userIter == _userIdToUserMap.end())
 		return nullptr;
 
-	return _elementArr[userIter->second];
+	return userIter->second;
 }
