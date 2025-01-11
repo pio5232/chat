@@ -51,23 +51,21 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::Ma
 	return serialBuffer;
 }
 
-serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomRequestPacket)
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket)
 {
-	serialBuffer << makeRoomRequestPacket.size << makeRoomRequestPacket.type << makeRoomRequestPacket.isMade;
+	serialBuffer << makeRoomResponsePacket.size << makeRoomResponsePacket.type << makeRoomResponsePacket.isMade;
 
 	return serialBuffer;
 }
 
-serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket)
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& EnterRoomResponsePacket)
 {
-	serialBuffer << enterRoomResponsePacket.size << enterRoomResponsePacket.type << enterRoomResponsePacket.bAllow << enterRoomResponsePacket.roomInfo.ownerId << enterRoomResponsePacket.roomInfo.roomNum
-		<< enterRoomResponsePacket.roomInfo.curUserCnt << enterRoomResponsePacket.roomInfo.maxUserCnt;
-
-	serialBuffer.PutData(reinterpret_cast<char*>(enterRoomResponsePacket.roomInfo.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+	serialBuffer << EnterRoomResponsePacket.size << EnterRoomResponsePacket.type << EnterRoomResponsePacket.bAllow << EnterRoomResponsePacket.idCnt;
 
 	return serialBuffer;
 	// TODO: 여기에 return 문을 삽입합니다.
 }
+
 
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket)
 {
@@ -75,6 +73,13 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::En
 
 	return serialBuffer;
 	// TODO: 여기에 return 문을 삽입합니다.
+}
+
+MOD2025 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket)
+{
+	serialBuffer << leaveRoomNotifyPacket.size << leaveRoomNotifyPacket.type << leaveRoomNotifyPacket.leaveUserId;
+
+	return serialBuffer;
 }
 
 
@@ -95,9 +100,9 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Lo
 	return serialBuffer;
 }
 
-serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket)
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket)
 {
-	serialBuffer.GetData(reinterpret_cast<char*>(makeRoomResponsePacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+	serialBuffer.GetData(reinterpret_cast<char*>(makeRoomRequestPacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
 
 	return serialBuffer;
 }
@@ -109,19 +114,30 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Ma
 	return serialBuffer;
 }
 
-serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket)
-{
-	serialBuffer >> enterRoomResponsePacket.bAllow >> enterRoomResponsePacket.roomInfo;
-
-	return serialBuffer;
-	// TODO: 여기에 return 문을 삽입합니다.
-}
-
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket)
 {
 	serialBuffer >> enterRoomNotifyPacket.enterUserId;
 
 	return serialBuffer;
 	// TODO: 여기에 return 문을 삽입합니다.
+}
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::EnterRoomRequestPacket& enterRoomRequestPacket)
+{
+	serialBuffer >> enterRoomRequestPacket.roomNum;
+
+	serialBuffer.GetData(reinterpret_cast<char*>(enterRoomRequestPacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
+	// TODO: 여기에 return 문을 삽입합니다.
+}
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::LeaveRoomRequestPacket& leaveRoomRequestPacket)
+{
+	serialBuffer >> leaveRoomRequestPacket.roomNum;
+
+	serialBuffer.GetData(reinterpret_cast<char*>(leaveRoomRequestPacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
+
+	return serialBuffer;
 }
 

@@ -70,7 +70,7 @@ SharedRoom C_Network::RoomManager::CreateRoom(ULONGLONG ownerUserId, WCHAR* room
 
 	{
 		SRWLockGuard lockGuard(&_lock);
-		_roomMap.insert(std::pair(ownerUserId, sharedRoom));
+		_roomMap.insert(std::pair(roomNum, sharedRoom));
 	}
 	sharedRoom->DoAsync(&Room::EnterRoom, ownerUserId);
 

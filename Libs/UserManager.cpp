@@ -24,7 +24,7 @@ SharedUser C_Network::UserManager::CreateUser(ULONGLONG userId, SharedSession sh
 		SRWLockGuard lockGuard(&_lock);
 		
 		_sessionIdToUserMap.insert(std::make_pair(sessionId, sharedUser));
-		_sessionIdToUserMap.insert(std::make_pair(userId, sharedUser));
+		_userIdToUserMap.insert(std::make_pair(userId, sharedUser));
 	}
 
 	return sharedUser;// _elementArr[idx];

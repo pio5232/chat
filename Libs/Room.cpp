@@ -2,6 +2,7 @@
 #include "Room.h"
 #include "NetworkBase.h"
 #include "UserManager.h"
+#include "ClientPacketHandler.h"
 
 C_Network::Room::Room(C_Network::ServerBase* owner, UserManager* userMgr, ULONGLONG ownerId, uint16 maxUserCnt, uint16 roomNum, WCHAR* roomName) : _owner(owner), _maxUserCnt(maxUserCnt), _userMgr(userMgr),
 _ownerId(ownerId), _roomNumber(roomNum)
@@ -17,29 +18,116 @@ C_Network::Room::~Room()
 }
 
 void C_Network::Room::EnterRoom(ULONGLONG userId)
-{
+{	
 	std::weak_ptr<User> user = _userMgr->GetUserByUserId(userId);
+	
+	C_Network::EnterRoomResponsePacket responsePacket{};
+	
+	responsePacket.size = sizeof(responsePacket.bAllow) + sizeof(responsePacket.idCnt);
+	if (_maxUserCnt == _userMap.size())
+	{
+		if (user.expired())
+			return;
 
-	_userMap.insert(std::make_pair(userId, user));
+		SharedUser sharedUser = user.lock();
+		
+		responsePacket.bAllow = false;
+		responsePacket.idCnt = 0;
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(responsePacket);
+
+		_owner->Send(sharedUser->GetSessionId(), sendBuffer);
+
+		printf("EnterRoom - RoomCnt is Full");
+		return;
+	}
+
+	responsePacket.bAllow = true;
+	responsePacket.idCnt = _userMap.size();
+	responsePacket.size += _userMap.size() * sizeof(ULONGLONG);
+
+	{
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakeSendBuffer(sizeof(responsePacket) + responsePacket.size);
+
+		*sendBuffer << responsePacket;
+		for (auto& pair : _userMap)
+		{
+			*sendBuffer << pair.first;
+		}
+
+		_userMap.insert(std::make_pair(userId, user));
+
+		SendToUser(sendBuffer, userId);
+	}
+
+	C_Network::EnterRoomNotifyPacket enterNotifyPacket;
+	enterNotifyPacket.enterUserId = userId;
+	{
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(enterNotifyPacket);
+
+		SendToAll(sendBuffer, userId, true);
+	}
 }
 
 void C_Network::Room::LeaveRoom(ULONGLONG userId)
 {
+
+	{
+		C_Network::LeaveRoomResponsePacket leaveRoomResponsePacket;
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(leaveRoomResponsePacket);
+
+		SendToUser(sendBuffer, userId);
+	}
+
 	_userMap.erase(userId);
+	{
+		C_Network::LeaveRoomNotifyPacket leaveRoomNotifyPacket;
+		leaveRoomNotifyPacket.leaveUserId = userId;
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(leaveRoomNotifyPacket);
+
+		SendToAll(sendBuffer);
+	}
+}
+
+void C_Network::Room::ChatRoom(ULONGLONG sendUserId, SharedSendBuffer chatNotifyBuffer)
+{
+	SendToAll(chatNotifyBuffer, sendUserId, true);
 }
 
 
-C_Network::NetworkErrorCode C_Network::Room::SendToAll(SharedSendBuffer& sharedSendBuffer)
+C_Network::NetworkErrorCode C_Network::Room::SendToAll(SharedSendBuffer sharedSendBuffer, ULONGLONG excludedId, bool isexcluded)
 {
 	for (auto& pair : _userMap)
 	{
-		if(!pair.second.expired());
+		if(false == pair.second.expired())
 		{
 			SharedUser user = pair.second.lock();
-			
+			if (isexcluded && user->GetUserId() == excludedId)
+				continue;
+
 			_owner->Send(user->GetSessionId(), sharedSendBuffer);
 		}
 	}
 	 
 	return C_Network::NetworkErrorCode::NONE;
+}
+
+ErrorCode C_Network::Room::SendToUser(SharedSendBuffer sharedSendBuffer, ULONGLONG userId)
+{
+	auto iter = _userMap.find(userId);
+
+	if (iter == _userMap.end())
+	{
+		printf("SendToUser - userId Not Found\n");
+		return ErrorCode::NOT_FOUND;
+	}
+	if (iter->second.expired())
+	{
+		printf("SendToUser - weak_ptr is Expired\n");
+		return ErrorCode::ACCESS_DELETE_MEMBER;
+	}
+	SharedUser sharedUser = iter->second.lock();
+
+	_owner->Send(sharedUser->GetSessionId(), sharedSendBuffer);
+
+	return ErrorCode::NONE;
 }

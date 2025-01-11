@@ -21,15 +21,17 @@ namespace C_Network
 		void EnterRoom(ULONGLONG userId);
 		void LeaveRoom(ULONGLONG userId);
 
+		void ChatRoom(ULONGLONG sendUserId, SharedSendBuffer chatNotifyBuffer);
 		uint16 GetCurUserCnt() const { return _userMap.size(); }
 		uint16 GetMaxUserCnt() const { return _maxUserCnt; }
 		uint16 GetRoomNum() const { return _roomNumber; }
 		ULONGLONG GetOwnerId() const { return _ownerId; }
 		const void* GetRoomNamePtr() { return _roomName; }
 
-		NetworkErrorCode SendToAll(SharedSendBuffer& sharedSendBuffer);
 
 	private:
+		NetworkErrorCode SendToAll(SharedSendBuffer sharedSendBuffer, ULONGLONG excludedId = 0, bool isexcluded = false);
+		ErrorCode SendToUser(SharedSendBuffer sharedSendBuffer, ULONGLONG userId);
 
 		std::unordered_map<ULONGLONG, std::weak_ptr<C_Network::User>> _userMap;
 

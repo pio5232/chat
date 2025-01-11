@@ -3,6 +3,8 @@
 
 using serializationBuffer = C_Utility::CSerializationBuffer;
 
+#define MOD2025
+#define MOD2025VAR
 namespace C_Network
 {
 	const int ServerPort = 6000;
@@ -10,6 +12,7 @@ namespace C_Network
 	const int MAX_PACKET_SIZE = 1000;
 	TODO_DEFINITION;
 
+	// TODO : 구성이나 로직이 동일한 패킷들은 합치도록 하자. (EX) EnterRoom / LeaveRoom Request Packet은 구성 요소가 똑같기 때문에 하나로 합치고 플래그만 조절하는 식으로 변경, (EnterRoom Notify / LeaveRoomNotify)
 
 	/// <summary>
 	/// 편의성을 위해서 구조체를 정의하고 있지만, 나중이 되면 구조체는 삭제해야 한다.
@@ -124,6 +127,7 @@ namespace C_Network
 	struct ChatOtherUserNotifyPacket : public PacketHeader
 	{
 	public :
+		ChatOtherUserNotifyPacket() { type = CHAT_NOTIFY_PACKET; }
 		ULONGLONG sendUserId = 0;
 		uint16 messageLen = 0;
 		WCHAR payLoad[0];
@@ -172,14 +176,19 @@ namespace C_Network
 		bool isMade = false;
 	};
 
-	struct alignas (64) EnterRoomResponsePacket : public PacketHeader
+	//struct alignas (64) EnterRoomResponsePacket : public PacketHeader
+	MOD2025VAR
+	struct EnterRoomResponsePacket : public PacketHeader
 	{
-		EnterRoomResponsePacket() { size = sizeof(bAllow) + RoomInfo::GetSize(); type = ENTER_ROOM_RESPONSE_PACKET; }
+		EnterRoomResponsePacket() {  type = ENTER_ROOM_RESPONSE_PACKET; } 
 		bool bAllow = false;
-		RoomInfo roomInfo = {};
+		uint16 idCnt = 0;
+		ULONGLONG ids[0];
+		//RoomInfo roomInfo = {};
 	};
 
 	// ENTER_ROOM
+	MOD2025
 	struct EnterRoomRequestPacket : public PacketHeader
 	{
 		EnterRoomRequestPacket() { size = sizeof(roomNum) + sizeof(roomName); type = ENTER_ROOM_REQUEST_PACKET; }
@@ -192,6 +201,13 @@ namespace C_Network
 	{
 		EnterRoomNotifyPacket() { size = sizeof(enterUserId); type = ENTER_ROOM_NOTIFY_PACKET; }
 		ULONGLONG enterUserId = 0;
+	};
+
+	MOD2025
+	struct LeaveRoomNotifyPacket : public PacketHeader
+	{
+		LeaveRoomNotifyPacket() { size = sizeof(leaveUserId); type = LEAVE_ROOM_NOTIFY_PACKET; }
+		ULONGLONG leaveUserId = 0;
 	};
 
 	// LEAVE_ROOM
@@ -221,19 +237,23 @@ serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::P
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
 ;
+
+// 가변 길이의 패킷은 고정 형태의 데이터까지만 넣도록 한다.
 // Packet 정의할 때 패킷에 맞는 직렬화버퍼 << operator를 정의해줘야한다, PacketHeader의 사이즈 계산은 해놓은 상태여야한다!  operator << >> 는 입력 / 출력만 행할 뿐이다.
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket);
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomRequestPacket);
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);MOD2025VAR
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket); MOD2025
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket); MOD2025
 
 // >> opeartor 정의, >> operator는 PacketHeader에 대한 분리를 진행했기에 packetHeader의 데이터는 신경쓰지 않아도 된다.
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
-serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomResponsePacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket);
-serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomRequestPacket& enterRoomRequestPacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LeaveRoomRequestPacket& leaveRoomRequestPacket);
 
