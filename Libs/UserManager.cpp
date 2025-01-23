@@ -50,7 +50,7 @@ ErrorCode C_Network::UserManager::DeleteUser(ULONGLONG userId)
 
 	_sessionIdToUserMap.erase(sessionMapIter);
 
-	printf("[User Delete. User id = %llu, \n", userId);
+	printf("[ User Delete. User id = %llu ] \n", userId);
 
 	return ErrorCode::NONE;
 }

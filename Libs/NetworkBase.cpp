@@ -353,7 +353,8 @@ C_Network::NetworkErrorCode C_Network::ServerBase::ProcessSend(SharedSession ses
 	C_Network::NetworkErrorCode ret = session->ProcessSend(transferredBytes);
 	
 	if (C_Network::NetworkErrorCode::SEND_LEN_ZERO == ret)
-		CCrash(L"Send 0 Byte");
+		ProcessDisconnect(session);
+		//CCrash(L"Send 0 Byte");
 
 	//_monitor->IncSendCount();
 

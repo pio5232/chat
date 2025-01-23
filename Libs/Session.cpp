@@ -20,7 +20,7 @@ void C_Network::IocpEvent::Reset()
 
 // new로 했을 때 사용.
 C_Network::Session::Session(SOCKET sock, SOCKADDR_IN* pSockAddr) : _socket(sock), _recvEvent(), _sendEvent(),_connectEvent(),
-_netAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0)
+_netAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0), _isDisconn(0)
 {
 	InitializeSRWLock(&_sendBufferLock);
 
@@ -60,7 +60,7 @@ C_Network::NetworkErrorCode C_Network::Session::ProcessSend(DWORD transferredByt
 
 	if (transferredBytes == 0)
 	{
-		Disconnect(L"Send Transferred Bytes is 0");
+		printf("Send Transferred Bytes is 0\n");
 		return C_Network::NetworkErrorCode::SEND_LEN_ZERO;
 	}
 
@@ -242,11 +242,17 @@ bool C_Network::Session::CheckDisconnect()
 	ULONG ioCount = InterlockedDecrement(&_ioCount);
 
 	//printf("CheckDisconn - ioCount : %d\n", ioCount);
+
 	if (ioCount == 0)
 	{
-		printf("DISCCONET [SESSION ID : %lld]", GetId());
+		char isDisconnected = InterlockedExchange8(&_isDisconn, 1);
 
-		return true;
+		if (0 == isDisconnected)
+		{
+			printf("DISCCONET [SESSION ID : %lld]", GetId());
+
+			return true;
+		}
 	}
 	return false;
 }

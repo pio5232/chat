@@ -94,6 +94,7 @@ namespace C_Network
 		std::queue<SharedSendBuffer> _sendBufferQ;
 
 		volatile char _sendFlag; // Use - 1, unUse - 0
+		volatile char _isDisconn;
 	public:
 	    volatile ULONG _ioCount;
 	public:
