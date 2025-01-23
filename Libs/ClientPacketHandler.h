@@ -36,6 +36,17 @@ namespace C_Network
 			return sendBuffer;
 		}
 
+		SharedSendBuffer MakeErrorPacket(PacketErrorCode errorCode)
+		{
+			ErrorPacket errorPacket;
+
+			errorPacket.packetErrorCode = errorCode;
+
+			SharedSendBuffer sendBuffer = MakePacket(errorPacket);
+
+			return sendBuffer;
+		}
+		
 		//template <>
 		//static SharedSendBuffer MakePacket<PacketHeader>(PacketHeader& packet)
 		//{

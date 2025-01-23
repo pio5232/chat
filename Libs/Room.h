@@ -2,7 +2,7 @@
 
 #include "User.h"
 #include "JobQueue.h"
-
+#include <set>
 namespace C_Network
 {
 	// 현재는 Room을 모두 만들어놓고 (룸의 고유 번호는 증가되는 형태로) 사용할 것임.
@@ -15,7 +15,7 @@ namespace C_Network
 			RUNNING, // 게임 중인 방.
 		};
 
-		Room(class ServerBase* owner, class UserManager* userMgr, ULONGLONG ownerId, uint16 maxUserCnt, uint16 roomNum, WCHAR* roomName);
+		Room(class ServerBase* owner, class UserManager* userMgr,class RoomManager* roomMgr, ULONGLONG ownerId, uint16 maxUserCnt, uint16 roomNum, WCHAR* roomName);
 		~Room();
 
 		void EnterRoom(ULONGLONG userId);
@@ -26,7 +26,7 @@ namespace C_Network
 		uint16 GetMaxUserCnt() const { return _maxUserCnt; }
 		uint16 GetRoomNum() const { return _roomNumber; }
 		ULONGLONG GetOwnerId() const { return _ownerId; }
-		const void* GetRoomNamePtr() { return _roomName; }
+		void* GetRoomNamePtr() { return _roomName; }
 
 
 	private:
@@ -42,6 +42,7 @@ namespace C_Network
 
 		RoomState _roomState = RoomState::IDLE;
 		
+		class RoomManager* _roomMgr;
 		class UserManager* _userMgr;
 		class ServerBase* _owner;
 	};

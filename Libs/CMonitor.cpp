@@ -57,20 +57,29 @@ void C_Utility::NetMonitor::MonitoringJob()
 }
 
 
-//void C_Utility::ChatMonitor::MonitoringJob()
-//{
-	//printf("[ Current User Count : %u ] \n", _userMgr->GetCurElementCount());
+void C_Utility::ChatMonitor::MonitoringJob()
+{
+	_wsetlocale(LC_ALL, L"korean");
 
-	//C_Network::RoomManager* rm = new C_Network::RoomManager(nullptr, 1, 2, nullptr);
+	std::vector<std::weak_ptr<C_Network::Room>> readRoomInfos;
 
-	//{
-	//	SRWLockGuard lockGuard(const_cast<SRWLOCK*>(&_roomMgr->_lock));
+	readRoomInfos.clear();
 
-	//	for (auto& pair : _roomMgr->_roomMap)
-	//	{
-	//		C_Network::Room* room = pair.second;
-	//		printf("[ Room Num : %u / 인원 : (%u / %u) / Owner Id : %llu / Title : %s ]\n", room->GetRoomNum(), room->GetCurUserCnt(), room->GetMaxUserCnt(), room->GetOwnerId(), room->GetRoomNamePtr());
-	//	}
-	//}
-	//return;
-//}
+	_roomMgr->GetRoomsRead(readRoomInfos);
+		
+	printf("[ Current User Count : %u ] \n", _userMgr->GetUserCount() );
+		
+	for (auto& weakPtr : readRoomInfos)
+	{
+		if (!weakPtr.expired())
+		{
+			SharedRoom room = weakPtr.lock();
+			
+			WCHAR* pWchar = static_cast<WCHAR*>(room->GetRoomNamePtr());
+
+			wprintf(L"[ %d번 방	[ %s ]	owner : %lld	  ( %d / %d ) \n", room->GetRoomNum(), pWchar, room->GetOwnerId(), room->GetCurUserCnt(), room->GetMaxUserCnt());
+		}
+	}
+
+	return;
+}

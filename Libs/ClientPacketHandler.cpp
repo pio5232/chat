@@ -105,8 +105,6 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(U
 {
 	C_Utility::Log(L" MakeRoom Request Recv");
 
-	MakeRoomRequestPacket requestPacket;
-
 	WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 
 	buffer.GetData(reinterpret_cast<char*>(&roomName), sizeof(roomName));
@@ -130,6 +128,12 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(U
 	else
 	{
 		makeRoomResponsePacket.isMade = true;
+
+		makeRoomResponsePacket.roomInfo.curUserCnt = newRoom->GetCurUserCnt();
+		makeRoomResponsePacket.roomInfo.maxUserCnt = newRoom->GetMaxUserCnt();
+		makeRoomResponsePacket.roomInfo.ownerId = newRoom->GetOwnerId();
+		makeRoomResponsePacket.roomInfo.roomNum = newRoom->GetRoomNum();
+		wmemcpy_s(makeRoomResponsePacket.roomInfo.roomName, ROOM_NAME_MAX_LEN, roomName, ROOM_NAME_MAX_LEN);
 	}
 	
 	C_Network::SharedSendBuffer responsePacketBuffer = MakePacket(makeRoomResponsePacket); 
@@ -150,9 +154,20 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessEnterRoomRequestPacket(
 
 	SharedRoom sharedRoom = _roomMgr->GetRoom(requestPacket.roomNum);
 
+	if (nullptr == sharedRoom)
+	{
+		SharedSendBuffer sendBuffer = MakeErrorPacket(PacketErrorCode::REQUEST_DESTROYED_ROOM);
+		
+		_owner->Send(sessionId, sendBuffer);
+		printf("Invalid Access - Destroyed Room");
+		return ErrorCode::CANNOT_FIND_ROOM;
+	}
+
 	if (wcscmp(requestPacket.roomName, static_cast<const WCHAR*>(sharedRoom->GetRoomNamePtr())) != 0)
 	{
-		TODO_LOG_ERROR;
+		SharedSendBuffer sendBuffer = MakeErrorPacket(PacketErrorCode::REQUEST_DIFF_ROOM_NAME);
+		
+		_owner->Send(sessionId, sendBuffer);
 		printf("EnterRoom - Room name is Diffrent\n");
 		return ErrorCode::CANNOT_FIND_ROOM;
 	}

@@ -13,7 +13,7 @@ C_Network::ChattingServer::ChattingServer(const NetAddress& netAddr, uint maxSes
 	_userMgr = std::make_unique<UserManager>(maxSessionCnt);
 	_roomMgr = std::make_unique<RoomManager>(this, roomCnt, maxRoomUserCnt,_userMgr.get());
 
-	//_monitor = std::make_unique<C_Utility::ChatMonitor>(_roomMgr.get(), _userMgr.get());
+	_monitor = std::make_unique<C_Utility::ChatMonitor>(_roomMgr.get(), _userMgr.get());
 			// TODO : USE POOL, 스마트 포인터에 대해서도 pool을 적용할 수 있다면 좋을 것임.
 	_packetHandler = new ChattingClientPacketHandler(this, _roomMgr.get(), _userMgr.get(), _sessionMgr.get());
 }
@@ -34,8 +34,24 @@ void C_Network::ChattingServer::OnConnected(const SOCKADDR_IN& clientInfo, ULONG
 
 void C_Network::ChattingServer::OnDisconnected(ULONGLONG sessionId)
 {
-	_userMgr->DeleteUser(sessionId);
-	// TODO : 해당 세션의 user Id 를 찾아서 데이터 저장 및 제거 필요.
+	SharedUser sharedUser = _userMgr->GetUserBySessionId(sessionId);
+
+	if (nullptr == sharedUser)
+	{
+		printf("OnDisconnected - sharedUser is Null\n");
+		return;
+	}
+
+	std::weak_ptr<Room> connectedRoom = sharedUser->GetConnectedRoom();
+	if (!connectedRoom.expired())
+	{
+		SharedRoom sharedRoom = connectedRoom.lock();
+
+		sharedRoom->DoAsync(&Room::LeaveRoom, sharedUser->GetUserId());
+	}
+
+	_userMgr->DeleteUser(sharedUser->GetUserId());
+	 //TODO : 해당 세션의 user Id 를 찾아서 데이터 저장 및 제거 필요.
 }
 
 void C_Network::ChattingServer::OnError(int errCode, WCHAR* cause)

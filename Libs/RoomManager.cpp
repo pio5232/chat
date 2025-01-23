@@ -66,7 +66,7 @@ SharedRoom C_Network::RoomManager::CreateRoom(ULONGLONG ownerUserId, WCHAR* room
 	static volatile uint16 roomNumGen = 0;
 	uint16 roomNum = InterlockedIncrement16((short*)&roomNumGen);
 
-	SharedRoom sharedRoom = std::make_shared<C_Network::Room>(_owner, _userMgr, ownerUserId, _maxRoomUserCnt, roomNum, roomName);
+	SharedRoom sharedRoom = std::make_shared<C_Network::Room>(_owner, _userMgr,this, ownerUserId, _maxRoomUserCnt, roomNum, roomName);
 
 	{
 		SRWLockGuard lockGuard(&_lock);

@@ -32,6 +32,17 @@ namespace C_Network
 
 			return iter->second;
 		}
+
+		void GetRoomsRead(OUT std::vector<std::weak_ptr<Room>>& roomVec)
+		{
+			SRWLockGuard lockGuard(&_lock);
+
+			for (auto& pair : _roomMap)
+			{
+				roomVec.push_back(pair.second);
+			}
+		}
+
 	private:
 		const uint16 _maxRoomCnt;
 		const uint16 _maxRoomUserCnt; // room당 최대 user 수

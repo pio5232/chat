@@ -16,6 +16,7 @@ namespace C_Network
 		SharedUser GetUserBySessionId(ULONGLONG sessionId); // 해당 session id를 가진 user를 찾아내서 리턴한다.
 		SharedUser GetUserByUserId(ULONGLONG userId); // 해당 session id를 가진 user를 찾아내서 리턴한다.
 
+		uint GetUserCount() { return _sessionIdToUserMap.size(); }
 	private:
 
 		// TODO : 후에 READ_LOCK도 만든다면 속도의 향상을 기대할 수도 있을 것 같다.

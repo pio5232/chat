@@ -11,7 +11,7 @@ C_Network::ServerBase::ServerBase(const NetAddress& netAddr, uint maxSessionCnt)
 	_sessionMgr = std::make_unique<ServerSessionManager>(maxSessionCnt);
 	_logger = std::make_unique<C_Utility::FileLogger>();
 	
-	_monitor = nullptr;// std::make_unique<C_Utility::NetMonitor>(_sessionMgr);
+	//_monitor = nullptr;// std::make_unique<C_Utility::NetMonitor>(_sessionMgr);
 
 	_fileLogThread = std::thread([&]() {_logger->Save(); })
 	// Print Success and ConcurrentCnt

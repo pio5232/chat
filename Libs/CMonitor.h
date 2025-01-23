@@ -1,5 +1,10 @@
 #pragma once
 
+namespace C_Network
+{
+	class RoomManager;
+	class UserManager;
+}
 namespace C_Utility
 {
 	class CMonitor
@@ -34,14 +39,14 @@ namespace C_Utility
 		volatile ULONG _recvCount = 0;
 	};
 
-	//class ChatMonitor : public CMonitor
-	//{
-	////public:
-	////	ChatMonitor(class C_Network::RoomManager* roomMgr, class C_Network::UserManager* userMgr) : _roomMgr(roomMgr), _userMgr(userMgr) {}
-	////	virtual void MonitoringJob() override;
-	////private:
-	////	const class C_Network::RoomManager* const _roomMgr;
-	////	const class C_Network::UserManager* const _userMgr;
-	//};
+	class ChatMonitor : public CMonitor
+	{
+	public:
+		ChatMonitor(class C_Network::RoomManager* roomMgr, class C_Network::UserManager* userMgr) : _roomMgr(roomMgr), _userMgr(userMgr) {}
+		virtual void MonitoringJob() override;
+	private:
+		class C_Network::RoomManager* _roomMgr;
+		class C_Network::UserManager* _userMgr;
+	};
 
 }

@@ -8,6 +8,7 @@ enum class ErrorCode : uint16 // 클라에서 요청한 작업이 서버에서 잘 처리가 되었�
 	
 	CREATE_ROOM_FAILED,
 	MAX_ROOM,
+	ACCESS_DESTROYED_ROOM, // 삭제된 room에 접근
 	CANNOT_FIND_ROOM, // roomNum으로 room을 찾지 못함. 
 	ALREADY_EXIST_ROOM, // 존재하면 안되는데.. room이 존재하는 상태.
 

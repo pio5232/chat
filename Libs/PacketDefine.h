@@ -1,10 +1,6 @@
 #pragma once
-
-
 using serializationBuffer = C_Utility::CSerializationBuffer;
 
-#define MOD2025
-#define MOD2025VAR
 namespace C_Network
 {
 	const int ServerPort = 6000;
@@ -43,6 +39,7 @@ namespace C_Network
 		CLIENT_LOG_OUT_PACKET,
 		CLIENT_LOG_OUT_NOTIFY_PACKET,
 
+		OWNER_CHANGE_NOTIFY_PACKET,
 		// 클라이언트의 요청
 		CHAT_TO_ROOM_REQUEST_PACKET, // 방 안의 유저에게 메시지 전송 요청, RoomNum이 -1이면 모든 방에 전송.
 		CHAT_TO_USER_REQUEST_PACKET, // 하나의 유저에게 메시지 전송 요청.
@@ -53,11 +50,16 @@ namespace C_Network
 		CHAT_TO_USER_RESPONSE_PACKET, // 
 
 		HEART_BEAT_PACKET, // 연결 유지를 위한 패킷, 30초에 하나씩 보내도록 한다
-		
+		ERROR_PACKET, // 클라이언트에서 서버에 보냈지만 유효하지 않은 요청이 되어서 서버에서 사유와 함께 전달하도록 한다. ex) 삭제된 방에 들어가도록 하는 형태
 
 		ECHO_PACKET = 65534,
 	};
 
+	enum PacketErrorCode : uint16
+	{
+		REQUEST_DESTROYED_ROOM = 0, // 이미 삭제된 방에 진입 요청
+		REQUEST_DIFF_ROOM_NAME, // 요청한 방 제목이 다르다.
+	};
 	// 항상 padding이 존재하는지 확인해야한다.
 	enum PacketSize
 	{
@@ -84,6 +86,11 @@ namespace C_Network
 		__int64 data;
 	};
 
+	struct ErrorPacket : public PacketHeader
+	{
+		ErrorPacket() { size = sizeof(packetErrorCode); type = ERROR_PACKET; }
+		uint16 packetErrorCode = 0;
+	};
 	// CHAT 
 
 	struct ChatUserRequestPacket : public PacketHeader
@@ -158,6 +165,13 @@ namespace C_Network
 
 	};
 
+	// OWNER CHANGE NOTIFY
+	struct OwnerChangeNotifyPacket : PacketHeader
+	{
+		OwnerChangeNotifyPacket() { size = sizeof(userId); type = OWNER_CHANGE_NOTIFY_PACKET; }
+		ULONGLONG userId = 0;
+	};
+
 	struct LogOutNotifyPacket : PacketHeader
 	{
 		LogOutNotifyPacket() { size = sizeof(userId); type = CLIENT_LOG_OUT_NOTIFY_PACKET; }
@@ -172,12 +186,12 @@ namespace C_Network
 
 	struct MakeRoomResponsePacket : public PacketHeader
 	{
-		MakeRoomResponsePacket() { size = sizeof(isMade); type = MAKE_ROOM_RESPONSE_PACKET; }
+		MakeRoomResponsePacket() { size = sizeof(isMade) + RoomInfo::GetSize();  type = MAKE_ROOM_RESPONSE_PACKET; }
 		bool isMade = false;
+		RoomInfo roomInfo{};
 	};
 
 	//struct alignas (64) EnterRoomResponsePacket : public PacketHeader
-	MOD2025VAR
 	struct EnterRoomResponsePacket : public PacketHeader
 	{
 		EnterRoomResponsePacket() {  type = ENTER_ROOM_RESPONSE_PACKET; } 
@@ -188,7 +202,6 @@ namespace C_Network
 	};
 
 	// ENTER_ROOM
-	MOD2025
 	struct EnterRoomRequestPacket : public PacketHeader
 	{
 		EnterRoomRequestPacket() { size = sizeof(roomNum) + sizeof(roomName); type = ENTER_ROOM_REQUEST_PACKET; }
@@ -203,7 +216,6 @@ namespace C_Network
 		ULONGLONG enterUserId = 0;
 	};
 
-	MOD2025
 	struct LeaveRoomNotifyPacket : public PacketHeader
 	{
 		LeaveRoomNotifyPacket() { size = sizeof(leaveUserId); type = LEAVE_ROOM_NOTIFY_PACKET; }
@@ -229,6 +241,7 @@ namespace C_Network
 		uint16 roomCnt;
 		RoomInfo roomInfos[0];
 	};	
+
 }
 
 // Only Has Head Packet
@@ -236,7 +249,8 @@ serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::P
 
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::RoomInfo& roomInfo);
-;
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::ErrorPacket& errorPacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::ErrorPacket& errorPacket);
 
 // 가변 길이의 패킷은 고정 형태의 데이터까지만 넣도록 한다.
 // Packet 정의할 때 패킷에 맞는 직렬화버퍼 << operator를 정의해줘야한다, PacketHeader의 사이즈 계산은 해놓은 상태여야한다!  operator << >> 는 입력 / 출력만 행할 뿐이다.
@@ -244,9 +258,10 @@ serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::L
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LogInResponsePacket& logInResponsePacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomRequestPacket& makeRoomRequestPacket);
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket);
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);MOD2025VAR
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket); MOD2025
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket); MOD2025
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomResponsePacket& enterRoomResponsePacket);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket); 
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket); 
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket); 
 
 // >> opeartor 정의, >> operator는 PacketHeader에 대한 분리를 진행했기에 packetHeader의 데이터는 신경쓰지 않아도 된다.
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);
@@ -256,4 +271,5 @@ serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::M
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::EnterRoomRequestPacket& enterRoomRequestPacket);
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LeaveRoomRequestPacket& leaveRoomRequestPacket);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket);
 

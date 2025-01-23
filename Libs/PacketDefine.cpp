@@ -27,6 +27,20 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Ro
 	return serialBuffer;
 }
 
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::ErrorPacket& errorPacket)
+{
+	serialBuffer << errorPacket.size << errorPacket.type << errorPacket.packetErrorCode;
+
+	return serialBuffer;
+}
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::ErrorPacket& errorPacket)
+{
+	serialBuffer >> errorPacket.packetErrorCode;
+
+	return serialBuffer;
+}
+
 
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInPacket)
 {
@@ -53,7 +67,7 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::Ma
 
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket)
 {
-	serialBuffer << makeRoomResponsePacket.size << makeRoomResponsePacket.type << makeRoomResponsePacket.isMade;
+	serialBuffer << makeRoomResponsePacket.size << makeRoomResponsePacket.type << makeRoomResponsePacket.isMade << makeRoomResponsePacket.roomInfo;
 
 	return serialBuffer;
 }
@@ -75,9 +89,16 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::En
 	// TODO: 여기에 return 문을 삽입합니다.
 }
 
-MOD2025 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket)
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket)
 {
 	serialBuffer << leaveRoomNotifyPacket.size << leaveRoomNotifyPacket.type << leaveRoomNotifyPacket.leaveUserId;
+
+	return serialBuffer;
+}
+
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket)
+{
+	serialBuffer << ownerChangeNotifyPacket.size << ownerChangeNotifyPacket.type << ownerChangeNotifyPacket.userId;
 
 	return serialBuffer;
 }
@@ -109,7 +130,7 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::Ma
 
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::MakeRoomResponsePacket& makeRoomResponsePacket)
 {
-	serialBuffer >> makeRoomResponsePacket.isMade;
+	serialBuffer >> makeRoomResponsePacket.isMade >> makeRoomResponsePacket.roomInfo;
 
 	return serialBuffer;
 }
@@ -130,6 +151,13 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::En
 
 	return serialBuffer;
 	// TODO: 여기에 return 문을 삽입합니다.
+}
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket)
+{
+	serialBuffer >> ownerChangeNotifyPacket.userId;
+
+	return serialBuffer;
 }
 
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::LeaveRoomRequestPacket& leaveRoomRequestPacket)
