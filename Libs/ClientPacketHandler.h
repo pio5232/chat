@@ -17,6 +17,8 @@ namespace C_Network
 		//, uint16) > ; // sessionId, Message 내용 버퍼, Message 크기.
 		using PacketFunc = ErrorCode(PacketHandlerType::*)(ULONGLONG, C_Utility::CSerializationBuffer&);//std::function<bool(ULONGLONG, char*)>;
 
+
+		// AA BUFFER 만드는 부분 따로 분리 필요
 		static SharedSendBuffer MakeSendBuffer(uint packetSize)
 		{
 			return std::make_shared<C_Utility::CSerializationBuffer>(packetSize);
@@ -26,7 +28,7 @@ namespace C_Network
 		template <typename PacketType>
 		static SharedSendBuffer MakePacket(PacketType& packet)// (uint16 packetType, PacketType& packet)
 		{
-			// TODO : CSerializationBuffer 또한 Pool에서 꺼내서 사용하도록 만든다.
+			// AA
 			uint16 packetSize = sizeof(packet);
 
 			SharedSendBuffer sendBuffer = std::make_shared<C_Utility::CSerializationBuffer>(packetSize);
@@ -36,7 +38,7 @@ namespace C_Network
 			return sendBuffer;
 		}
 
-		SharedSendBuffer MakeErrorPacket(PacketErrorCode errorCode)
+		static SharedSendBuffer MakeErrorPacket(PacketErrorCode errorCode)
 		{
 			ErrorPacket errorPacket;
 
@@ -87,6 +89,8 @@ namespace C_Network
 
 			_packetFuncsDic[ENTER_ROOM_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessEnterRoomRequestPacket;
 			_packetFuncsDic[LEAVE_ROOM_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessLeaveRoomRequestPacket;
+
+			_packetFuncsDic[GAME_READY_REQUEST_PACKET] = &ChattingClientPacketHandler::ProcessGameReadyRequestPacket;
 		}
 	private:
 		// 함수 정의
@@ -98,6 +102,7 @@ namespace C_Network
 		ErrorCode ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessEnterRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 		ErrorCode ProcessLeaveRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
+		ErrorCode ProcessGameReadyRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
 
 		class ChattingServer* _owner;
 		class RoomManager* _roomMgr;
@@ -105,6 +110,21 @@ namespace C_Network
 		class SessionManager* _sessionMgr;
 	};
 
+
+	class LanClientPacketHandler : public ClientPacketHandler<LanClientPacketHandler>
+	{
+	public:
+		LanClientPacketHandler(class SessionManager* sessionMgr, class LanServer* owner) : _sessionMgr(sessionMgr)
+		,_owner(owner)
+		{
+			_packetFuncsDic[GAME_SERVER_INFO_NOTIFY_PACKET] = &LanClientPacketHandler::ProcessLanInfoNotifyPacket;
+		}
+
+		ErrorCode ProcessLanInfoNotifyPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer);
+	private:
+		class SessionManager* _sessionMgr;
+		class LanServer* _owner;
+	};
 	// 나중에 만들게 될 중계 서버, 중계 서버가 생기게 되면 패킷 처리에 대한 부분도 이 녀석이 1차로 검증을 한 후에 메인 로직 서버에 전달해야한다.
 	class LogInClientPacketHandler : public ClientPacketHandler<LogInClientPacketHandler>
 	{

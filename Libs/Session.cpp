@@ -19,12 +19,11 @@ void C_Network::IocpEvent::Reset()
 ------------------------------*/
 
 // new로 했을 때 사용.
-C_Network::Session::Session(SOCKET sock, SOCKADDR_IN* pSockAddr) : _socket(sock), _recvEvent(), _sendEvent(),_connectEvent(),
-_netAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0), _isDisconn(0)
+C_Network::Session::Session(SOCKET sock,const SOCKADDR_IN* pSockAddr) : _socket(sock), _recvEvent(), _sendEvent(),_connectEvent(),
+_targetNetAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0), _isDisconn(0)
 {
 	InitializeSRWLock(&_sendBufferLock);
 
-	TODO_UPDATE_EX_LIST;
 	// 비동기로 바뀔 경우 sessinonId의 변경을 atomic하게 해줘야한다.
 	static  ULONGLONG sessionId = 0;
 
@@ -82,9 +81,6 @@ bool C_Network::Session::ProcessConnect()
 
 bool C_Network::Session::ProcessAccept()
 {	
-	TODO_DEFINITION;
-	TODO_UPDATE_EX_LIST;
-
 	PostRecv();
 
 	return false;
@@ -92,9 +88,6 @@ bool C_Network::Session::ProcessAccept()
 
 bool C_Network::Session::ProcessDisconnect()
 {
-	// TODO : 이 부분은 비동기로 처리할 때 생각하도록 한다.
-
-
 	return false;
 }
 
@@ -228,20 +221,27 @@ void C_Network::Session::PostRecv()
 // --------------------------------------------------- ASynchronization ---------------------------------------------------
 void C_Network::Session::PostAccept()
 {
-	TODO_DEFINITION;
-	TODO_UPDATE_EX_LIST;
+
 }
 
-void C_Network::Session::Disconnect(const WCHAR* cause)
+// 강제 종료.
+void C_Network::Session::Disconnect()
 {
-	std::wcout << cause << "\n";// (L"%s", cause);
+	char isDisconnected = InterlockedExchange8(&_isDisconn, 1);
+
+	if (0 == isDisconnected)
+	{
+		printf("Force Disconnect[SESSION ID : %lld]", GetId());
+
+		closesocket(_socket);
+
+		_socket = INVALID_SOCKET;
+	}
 }
 
 bool C_Network::Session::CheckDisconnect()
 {
 	ULONG ioCount = InterlockedDecrement(&_ioCount);
-
-	//printf("CheckDisconn - ioCount : %d\n", ioCount);
 
 	if (ioCount == 0)
 	{
@@ -249,7 +249,7 @@ bool C_Network::Session::CheckDisconnect()
 
 		if (0 == isDisconnected)
 		{
-			printf("DISCCONET [SESSION ID : %lld]", GetId());
+			printf("Disconnect [SESSION ID : %lld]\n", GetId());
 
 			return true;
 		}
@@ -260,8 +260,7 @@ bool C_Network::Session::CheckDisconnect()
 
 void C_Network::Session::PostConnect()
 {
-	TODO_DEFINITION;
-	TODO_UPDATE_EX_LIST;
+
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -270,10 +269,9 @@ void C_Network::Session::PostConnect()
 
 SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle)
 {
-	TODO_UPDATE_EX_LIST;
 	if (_sessionCnt == _maxSessionCnt)
 	{
-		C_Utility::Log(L"Session Count is Max"); TODO_LOG // Log 더 정확하게.
+		wprintf(L"Session Count is Max");
 
 		return nullptr;
 	}
@@ -285,7 +283,7 @@ SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN*
 	{
 		_sessionCnt.fetch_sub(1);
 
-		C_Utility::Log(L"Error.. Session Not Registed in Iocp "); TODO_LOG // Log 더 정확하게.
+		wprintf(L"Error.. Session Not Registed in Iocp "); 
 			
 		return nullptr;
 	}
@@ -319,10 +317,10 @@ C_Network::SessionManager::~SessionManager()
 {
 	SRWLockGuard lockGuard(&_lock);
 	
-	for (auto& pair : _sessionToIdDic)
+	for (auto iter = _sessionToIdDic.begin(); iter != _sessionToIdDic.end(); )
 	{
-		_idToSessionDic.erase(pair.second);
-		_sessionToIdDic.erase(pair.first);
+		_idToSessionDic.erase(iter->second);
+		iter = _sessionToIdDic.erase(iter);
 	}
 }
 

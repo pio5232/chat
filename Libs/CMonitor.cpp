@@ -41,18 +41,18 @@ void C_Utility::CMonitor::ProcessMonitoring()
 
 void C_Utility::NetMonitor::MonitoringJob()
 {
-	//while (_monitoringFlag)
-	//{
-	//	printf("[ Current Connect Session Count : %u ]\n", _sessionMgr->GetCurElementCount());
+	while (_monitoringFlag)
+	{
+		printf("[ Current Connect Session Count : %u ]\n", _sessionMgr->GetSessionCnt());
 
-	//	printf("[ Send Completion Count : %u ]\n", InterlockedExchange(&_sendCount, 0));
+		printf("[ Send Completion Count : %u ]\n", InterlockedExchange(&_sendCount, 0));
 
-	//	printf("[ Recv Completion Count : %u ]\n", InterlockedExchange(&_recvCount, 0));
+		printf("[ Recv Completion Count : %u ]\n", InterlockedExchange(&_recvCount, 0));
 
-	//	printf("\n");
+		printf("\n");
 
-	//	Sleep(1000);
-	//}
+		Sleep(1000);
+	}
 	return;
 }
 
@@ -66,7 +66,8 @@ void C_Utility::ChatMonitor::MonitoringJob()
 	readRoomInfos.clear();
 
 	_roomMgr->GetRoomsRead(readRoomInfos);
-		
+	
+	//system("cls");
 	printf("[ Current User Count : %u ] \n", _userMgr->GetUserCount() );
 		
 	for (auto& weakPtr : readRoomInfos)
@@ -77,7 +78,7 @@ void C_Utility::ChatMonitor::MonitoringJob()
 			
 			WCHAR* pWchar = static_cast<WCHAR*>(room->GetRoomNamePtr());
 
-			wprintf(L"[ %d번 방	[ %s ]	owner : %lld	  ( %d / %d ) \n", room->GetRoomNum(), pWchar, room->GetOwnerId(), room->GetCurUserCnt(), room->GetMaxUserCnt());
+			wprintf(L"[ %d번 방	[ %s ]	owner : %lld	  ( %d / %d )	준비 인원 : [%u] \n", room->GetRoomNum(), pWchar, room->GetOwnerId(), room->GetCurUserCnt(), room->GetMaxUserCnt(), room->GetReadyCnt());
 		}
 	}
 

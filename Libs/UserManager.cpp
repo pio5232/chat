@@ -16,7 +16,6 @@ C_Network::UserManager::~UserManager()
 
 SharedUser C_Network::UserManager::CreateUser(ULONGLONG userId, SharedSession sharedSession) // ULONGLONG sessionId)
 {
-	// 어차피 maxSession보다 크면 session 레벨에서 끊을 것이기 때문에 제한 생각 x
 	SharedUser sharedUser = std::make_shared<C_Network::User>(userId, sharedSession);
 
 	ULONGLONG sessionId = sharedUser->GetSessionId();

@@ -25,7 +25,6 @@ namespace C_Network
 			auto iter = _roomMap.find(roomNum);
 			if (iter == _roomMap.end())
 			{
-				TODO_LOG_ERROR;
 				printf("Requested Room is Not exist, %u\n", roomNum);
 				return nullptr;
 			}

@@ -59,7 +59,7 @@ namespace C_Network
 	struct Session : public std::enable_shared_from_this<Session>
 	{
 	public:
-		Session(SOCKET sock, SOCKADDR_IN* pSockAddr);
+		Session(SOCKET sock,const SOCKADDR_IN* pSockAddr);
 		~Session();
 
 		void Send(SharedSendBuffer sendBuf);
@@ -70,7 +70,7 @@ namespace C_Network
 		bool ProcessAccept();
 		bool ProcessDisconnect();
 
-		const NetAddress& GetNetAddr() const { return _netAddr; }
+		const NetAddress& GetNetAddr() const { return _targetNetAddr; }
 		SOCKET GetSock() const { return _socket; }
 		ULONGLONG GetId () const { return _sessionId; }
 
@@ -80,7 +80,7 @@ namespace C_Network
 		void PostConnect();
 		void PostAccept();
 
-		void Disconnect(const WCHAR* cause);
+		void Disconnect();
 
 		bool CheckDisconnect();
 
@@ -88,7 +88,7 @@ namespace C_Network
 
 		SRWLOCK _sendBufferLock;
 		SOCKET _socket;
-		NetAddress _netAddr;
+		NetAddress _targetNetAddr;
 		ULONGLONG _sessionId;
 
 		std::queue<SharedSendBuffer> _sendBufferQ;
@@ -116,6 +116,7 @@ namespace C_Network
 		void DeleteSession(SharedSession session);
 
 		SharedSession GetSession(ULONGLONG sessionId);
+		uint GetSessionCnt() { return _sessionCnt; }
 
 	protected:
 		SRWLOCK _lock;
@@ -129,6 +130,12 @@ namespace C_Network
 	{
 	public: ServerSessionManager(uint maxSessionCnt) : SessionManager(maxSessionCnt) {}
 		  ~ServerSessionManager() {}
+	};
+
+	class ClientSessionManager : public SessionManager
+	{
+	public: ClientSessionManager() : SessionManager(1) {}
+		  ~ClientSessionManager() {}
 	};
 
 }

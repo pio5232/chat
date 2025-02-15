@@ -31,5 +31,7 @@ namespace C_Network
 		//
 
 		CANNOT_FIND_PACKET_FUNC = 1000, // PacketHandler에 해당 패킷을 처리할 수 있는 함수가 등록되지 않음.
+		
+		NOT_FOUND,
 	};
 }

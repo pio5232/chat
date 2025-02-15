@@ -18,12 +18,14 @@ namespace C_Network
 		virtual void OnError(int errCode, WCHAR* cause);
 		virtual void OnRecv(C_Utility::CSerializationBuffer& buffer, ULONGLONG sessionId, uint16 type);
 
-		NetworkErrorCode SendToAllUser(SharedSendBuffer& buffer);
-		NetworkErrorCode SendToRoom(SharedSendBuffer& buffer, uint16 roomNum);
+		NetworkErrorCode SendToAllUser(SharedSendBuffer buffer, NetCallbackType callbackType);
+		NetworkErrorCode SendToRoom(SharedSendBuffer buffer, uint16 roomNum, NetCallbackType callbackType);
 
 	private:
 		class ChattingClientPacketHandler* _packetHandler;
 		std::unique_ptr<RoomManager> _roomMgr;
 		std::unique_ptr<UserManager> _userMgr;
+		std::unique_ptr<LanServer> _lanServer;
+
 	};
 }

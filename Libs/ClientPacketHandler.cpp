@@ -8,7 +8,7 @@
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
-	C_Utility::Log(L" ChatToRoom Request Recv");
+	wprintf(L" ChatToRoom Request Recv");
 
 	uint16 roomNum;
 	uint16 messageLen;
@@ -18,9 +18,6 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGL
 	char* payLoad = static_cast<char*>(malloc(messageLen));
 	
 	buffer.GetData(payLoad, messageLen);
-
-	// TODO : Message 문자열 검사
-	// WCHAR* ~~~
 
 	PacketHeader packetHeader;
 
@@ -35,7 +32,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGL
 
 	if (!sharedUser)
 	{
-		C_Utility::Log(L"ProcEnterRoomRequestPacket - User Not Found");
+		wprintf(L"ProcEnterRoomRequestPacket - User Not Found");
 		return ErrorCode::SESSION_USER_NOT_MAPPED;
 	}
 
@@ -54,15 +51,15 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToRoomPacket(ULONGL
 
 	SharedRoom sharedRoom = _roomMgr->GetRoom(roomNum);
 
-	sharedRoom->DoAsync(&Room::ChatRoom, userId, notifyBuffer);
-	//ErrorCode errCode = _roomMgr->SendToRoom(roomNum, notifyBuffer);
+	//sharedRoom->DoAsync(&Room::ChatRoom, userId, notifyBuffer);
+	sharedRoom->DoAsync(&Room::SendToAll, notifyBuffer, userId, false);
 
 	return ErrorCode::NONE;
 }
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
-	//C_Utility::Log(L" ChatToUser Request Recv");
+	//wprintf(L" ChatToUser Request Recv");
 
 	//ULONGLONG targetSessionId = 0;
 	//uint16 messageLen = 0;
@@ -73,7 +70,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGL
 
 	//buffer.GetData(payLoad, messageLen);
 
-	//// TODO : Message 문자열 검사
+	
 	//// WCHAR* ~~~
 
 	//PacketHeader packetHeader;
@@ -103,7 +100,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessChatToUserPacket(ULONGL
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
 {
-	C_Utility::Log(L" MakeRoom Request Recv");
+	wprintf(L" MakeRoom Request Recv");
 
 	WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 
@@ -140,9 +137,6 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessMakeRoomRequestPacket(U
 
 	_owner->Send(sessionId, responsePacketBuffer);
 	
-	printf("EnterRoom Response Packet Send  ");
-
-
 	return ret;
 }
 
@@ -176,9 +170,10 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessEnterRoomRequestPacket(
 
 	if (!userPtr)
 	{
-		C_Utility::Log(L"ProcEnterRoomRequestPacket - User Not Found");
+		wprintf(L"ProcEnterRoomRequestPacket - User Not Found");
 		return ErrorCode::SESSION_USER_NOT_MAPPED;
 	}
+	printf("EnterRoom Response Packet Send  ");
 
 	sharedRoom->DoAsync(&Room::EnterRoom, userPtr->GetUserId());
 
@@ -195,7 +190,6 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLeaveRoomRequestPacket(
 
 	if (wcscmp(leaveRoomRequestPacket.roomName, static_cast<const WCHAR*>(sharedRoom->GetRoomNamePtr())) != 0)
 	{
-		TODO_LOG_ERROR;
 		printf("LeaveRoom - Room name is Diffrent\n");
 		return ErrorCode::CANNOT_FIND_ROOM;
 	}
@@ -204,13 +198,41 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLeaveRoomRequestPacket(
 
 	if (!userPtr)
 	{
-		C_Utility::Log(L"ProcLeaveRoomRequestPacket - User Not Found");
+		wprintf(L"ProcLeaveRoomRequestPacket - User Not Found");
 		return ErrorCode::SESSION_USER_NOT_MAPPED;
 	}
 
 	sharedRoom->DoAsync(&Room::LeaveRoom, userPtr->GetUserId());
 
 	return ErrorCode();
+}
+
+ErrorCode C_Network::ChattingClientPacketHandler::ProcessGameReadyRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
+{
+	C_Network::GameReadyRequestPacket requestPacket;
+
+	buffer >> requestPacket.isReady;
+
+	SharedUser sharedUser = _userMgr->GetUserBySessionId(sessionId);
+
+	if (!sharedUser)
+	{
+		wprintf(L"ProcessGameReadyRequestPacket - User Not Found");
+		return ErrorCode::SESSION_USER_NOT_MAPPED;
+	}
+
+	ULONGLONG userId = sharedUser->GetUserId();
+
+	if (sharedUser->GetConnectedRoom().expired())
+	{
+		wprintf(L"ProcessGameReadyRequestPacket - Room Not Found");
+		return ErrorCode::CANNOT_FIND_ROOM;
+	}
+
+	SharedRoom sharedRoom = sharedUser->GetConnectedRoom().lock();
+
+	sharedRoom->DoAsync(&Room::SetReady, userId, requestPacket.isReady, true);
+
 }
 
 ErrorCode C_Network::ChattingClientPacketHandler::ProcessRoomListRequestPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
@@ -221,11 +243,11 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessRoomListRequestPacket(U
 
 	if (!userPtr)
 	{
-		C_Utility::Log(L"Room List Request Packet is Failed");
+		wprintf(L"Room List Request Packet is Failed");
 		return ErrorCode::SESSION_USER_NOT_MAPPED;
 	}
 
-	// TODO : use Pool
+	// AA
 	ErrorCode errCode = _roomMgr->SendToUserRoomInfo(sessionId);
 
 	return errCode;
@@ -246,7 +268,7 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLogInPacket(ULONGLONG s
 	// 원래는 DB에서 USER 정보를 얻어와야 하지만, 현재는 DB 적용하지 않았기 때문에 3씩 증가시키도록 한다.
 	static volatile ULONGLONG userIdGenerator = 4283;
 	
-	// TODO : DB에서 얻어오는걸로 변경.
+	// AAA : DB에서 얻어오는걸로 변경.
 	ULONGLONG userId = InterlockedAdd64((LONGLONG*)&userIdGenerator, 3);
 
 	LogInResponsePacket clientResponsePacket;
@@ -254,8 +276,6 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLogInPacket(ULONGLONG s
 	clientResponsePacket.size = sizeof(clientResponsePacket.userId);
 	clientResponsePacket.type = LOG_IN_RESPONSE_PACKET;
 	clientResponsePacket.userId = userId;
-
-	// TODO : userId, sessionId 등 userInfo를 채워서 user를 생성해야한다. 현재는 userId와 sessionId만을 기입해놓는다.
 	
 	SharedSession sharedSession = _sessionMgr->GetSession(sessionId);
 
@@ -271,5 +291,33 @@ ErrorCode C_Network::ChattingClientPacketHandler::ProcessLogInPacket(ULONGLONG s
 
 	// 현재는 일단 userId를 전송하도록 한다.
 	
+	return ErrorCode::NONE;
+}
+
+ErrorCode C_Network::LanClientPacketHandler::ProcessLanInfoNotifyPacket(ULONGLONG sessionId, C_Utility::CSerializationBuffer& buffer)
+{
+	C_Network::GameServerInfoNotifyPacket packet;
+	
+	buffer.GetData(reinterpret_cast<char*>(&packet.ipStr[0]), sizeof(packet.ipStr));
+
+	buffer >> packet.port >> packet.roomNum >> packet.xorToken;
+
+	wprintf(L"size : [ %d ]\n", packet.size);
+	wprintf(L"type : [ %d ]\n", packet.type);
+	wprintf(L"ip: [ %s ]\n", packet.ipStr);
+	wprintf(L"port : [ %d ]\n", packet.port);
+	wprintf(L"Room : [ %d ]\n", packet.roomNum);
+	wprintf(L"xorToken : [ %llu ], After : [%llu]\n", packet.xorToken, packet.xorToken^xorTokenKey);
+
+	C_Network::SharedSendBuffer sharedBuffer = LanClientPacketHandler::MakeSendBuffer(sizeof(packet));
+
+	*sharedBuffer << packet.size << packet.type;
+
+	sharedBuffer->PutData(reinterpret_cast<const char*>(packet.ipStr), IP_STRING_LEN * sizeof(WCHAR));
+
+	*sharedBuffer << packet.port << packet.roomNum << packet.xorToken;
+
+	_owner->ExecuteCallback(sharedBuffer, packet.roomNum, NetCallbackType::SEND_IPENDPOINT);
+
 	return ErrorCode::NONE;
 }

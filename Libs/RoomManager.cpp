@@ -86,7 +86,6 @@ void C_Network::RoomManager::DeleteRoom(uint16 roomNum)
 	}
 	if (0 == delSize)
 	{
-		TODO_LOG_ERROR;
 		printf("Delete Room is not exist.. %u\n", roomNum);
 		return;
 	}

@@ -63,8 +63,6 @@ namespace C_Memory
 			return POOL_COUNT_TO_LEVEL_2 + (size + POOL_SIZE_LEVEL_3) / POOL_SIZE_LEVEL_3 - 1;
 		}
 
-		// MemoryPool을 template으로 만들다보니 placement로 호출하게하는 클래스의 타입도 template으로 할 수 있게 만들어야하지만 
-		// 능력 부족으로 그러지 못했다.
 		static constexpr uint consArray[POOL_COUNT_TO_LEVEL_3] = { 32 * 1, 32 * 2, 32 * 3, 32 * 4, 32 * 5, 32 * 6, 32 * 7, 32 * 8, 32 * 9,
 			32 * 10, 32 * 11, 32 * 12, 32 * 13, 32 * 14, 32 * 15, 32 * 16, 32 * 17, 32 * 18, 32 * 19,
 			32 * 20, 32 * 21, 32 * 22, 32 * 23, 32 * 24, 32 * 25, 32 * 26, 32 * 27, 32 * 28, 32 * 29,
@@ -135,13 +133,10 @@ namespace C_Memory
 			if (_size == 0)
 			{
 				//std::cout << "NodeChunk Size is 0 ~ Destructor call successed\n";
-				TODO_TLS_LOG_SUCCESS;
 			}
 			else
 			{
 				std::cout << "NodeChunk Size is Not 0 - Error\n";
-
-				TODO_TLS_LOG_ERROR;
 			}
 		}
 		inline uint GetSize() const { return _size; }
@@ -257,7 +252,6 @@ namespace C_Memory
 
 			if (IntegrationChunkManager::GetInstance().GetPoolSize(AllocSize) > 0)
 			{
-				// TODO_추가
 				void* newNodeChunk = IntegrationChunkManager::GetInstance().GetNodeChunk(AllocSize);
 
 				if (newNodeChunk != nullptr)

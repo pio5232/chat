@@ -27,7 +27,7 @@ void C_Network::NetAddress::Init(SOCKADDR_IN sockAddr)
 
 const std::wstring C_Network::NetAddress::GetIpAddress() const
 {
-	WCHAR ipWstr[100];
+	WCHAR ipWstr[IP_STRING_LEN]{};
 
 	// 주소체계, &IN_ADDR
 	InetNtopW(AF_INET, &_sockAddr.sin_addr, ipWstr, sizeof(ipWstr) / sizeof(WCHAR));

@@ -24,6 +24,15 @@ namespace C_Network
 			return _mySession.lock()->GetId(); 
 		}
 
+		bool GetReady() const
+		{
+			return _isReady;
+		}
+		void SetReady(bool isReady)
+		{
+			_isReady = isReady;
+		}
+
 		void SetRoom(std::weak_ptr<Room> room) { _curRoom = room; }
 		std::weak_ptr<Room> GetConnectedRoom() { return _curRoom; }
 	private:
@@ -33,6 +42,7 @@ namespace C_Network
 		ULONGLONG _userId;
 		WCHAR _nickName[USER_NAME_MAX_LEN]; // À¯Àú id
 		uint _winCnt;
-		uint _loseCnt;
+
+		bool _isReady;
 	};
 }

@@ -20,7 +20,7 @@ namespace C_Utility
 		if( g_iLogLevel <= LogLevel)					\
 		{												\
 			wsprintf(g_szLogBuff, fmt, ##__VA_ARGS__);	\
-			C_Utility::Log(g_szLogBuff,LogLevel);					\
+			wprintf(g_szLogBuff,LogLevel);					\
 		}												\
 	}while (0)		
 
@@ -36,7 +36,8 @@ namespace C_Utility
 	public:
 		FileLogger() 
 		{
-			/*InitializeSRWLock(&_bufferLock);
+			/* 더 알아보고 다시 만들기.
+			InitializeSRWLock(&_bufferLock);
 			
 			time_t t = std::time(nullptr);
 			tm tm = *std::localtime(&t);
@@ -48,7 +49,6 @@ namespace C_Utility
 
 	//	void WriteLog(std::string content)
 	//	{
-	//		// TODO : CV 쓰는 방식으로 변경.
 	//		{
 	//			SRWLockGuard lockGuard(&_bufferLock);
 

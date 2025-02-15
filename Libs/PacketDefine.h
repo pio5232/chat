@@ -4,15 +4,14 @@ using serializationBuffer = C_Utility::CSerializationBuffer;
 namespace C_Network
 {
 	const int ServerPort = 6000;
+	const int LanServerPort = 8768;
 
 	const int MAX_PACKET_SIZE = 1000;
-	TODO_DEFINITION;
 
-	// TODO : 구성이나 로직이 동일한 패킷들은 합치도록 하자. (EX) EnterRoom / LeaveRoom Request Packet은 구성 요소가 똑같기 때문에 하나로 합치고 플래그만 조절하는 식으로 변경, (EnterRoom Notify / LeaveRoomNotify)
+	// AAA 구성이나 로직이 동일한 패킷들은 합치도록?. (EX) EnterRoom / LeaveRoom Request Packet은 구성 요소가 똑같기 때문에 하나로 합치고 플래그만 조절하는 식으로 변경, (EnterRoom Notify / LeaveRoomNotify)
 
 	/// <summary>
-	/// 편의성을 위해서 구조체를 정의하고 있지만, 나중이 되면 구조체는 삭제해야 한다.
-	/// 원래는 직렬화 버퍼만 사용해서 복사가 Send / Recv 시 1번씩 일어났지만 현재는 구조체를 사용하기 때문에 복사가 2번씩 일어나고 있다.
+	/// 편의성을 위해서 구조체를 정의하고 있지만, 나중이 되면 구조체는 삭제해도됨..
 	/// </summary>
 	enum PacketType : uint16 // packet order
 	{
@@ -49,8 +48,24 @@ namespace C_Network
 		CHAT_TO_ROOM_RESPONSE_PACKET,
 		CHAT_TO_USER_RESPONSE_PACKET, // 
 
+		GAME_READY_REQUEST_PACKET,
+		//GAME_READY_RESPONSE_PACKET,
+		GAME_READY_NOTIFY_PACKET,
+		GAME_START_NOTIFY_PACKET,
+
 		HEART_BEAT_PACKET, // 연결 유지를 위한 패킷, 30초에 하나씩 보내도록 한다
 		ERROR_PACKET, // 클라이언트에서 서버에 보냈지만 유효하지 않은 요청이 되어서 서버에서 사유와 함께 전달하도록 한다. ex) 삭제된 방에 들어가도록 하는 형태
+
+		// -- LAN
+		GAME_SERVER_INFO_NOTIFY_PACKET, // 자신 ip,port 등 정보 보냄
+		GAME_SERVER_INFO_RESPONSE_PACKET,
+
+		// -- GAME
+		ENTER_GAME_REQUEST_PACKET,
+		ENTER_GAME_RESPONSE_PACKET,
+
+		MAKE_MY_CHARACTER_PACKET,
+		MAKE_OTHER_CHARACTER_PACKET,
 
 		ECHO_PACKET = 65534,
 	};
@@ -59,6 +74,12 @@ namespace C_Network
 	{
 		REQUEST_DESTROYED_ROOM = 0, // 이미 삭제된 방에 진입 요청
 		REQUEST_DIFF_ROOM_NAME, // 요청한 방 제목이 다르다.
+
+		FULL_ROOM, // 인원이 꽉 찼다.
+		ALREADY_RUNNING_ROOM, // 이미 게임이 시작된 방이다.
+
+		// -- GAME
+		CONNECTED_FAILED_WRONG_TOKEN, // 게임 서버에 연결할 때 토큰이 잘못된 토큰이다.
 	};
 	// 항상 padding이 존재하는지 확인해야한다.
 	enum PacketSize
@@ -99,12 +120,12 @@ namespace C_Network
 		//ULONGLONG sendUserId = 0;
 		ULONGLONG targetUserId = 0;
 		uint16 messageLen = 0;
-		WCHAR payLoad[0];
-		//WCHAR payLoad[MESSAGE_MAX_LEN];
+		WCHAR payLoad[0];		//WCHAR payLoad[MESSAGE_MAX_LEN];
+
 	};
 	struct ChatRoomRequestPacket : public PacketHeader
 	{
-		// TODO : 수정
+		// AA
 	public:
 		uint16 roomNum = UINT16_MAX;
 		uint16 messageLen = 0;
@@ -197,7 +218,8 @@ namespace C_Network
 		EnterRoomResponsePacket() {  type = ENTER_ROOM_RESPONSE_PACKET; } 
 		bool bAllow = false;
 		uint16 idCnt = 0;
-		ULONGLONG ids[0];
+		ULONGLONG ids[0]; // 여기의 id 정보에는 최상위 bit가 Ready 상태를 가지도록 한다.
+
 		//RoomInfo roomInfo = {};
 	};
 
@@ -238,12 +260,85 @@ namespace C_Network
 	};
 	struct RoomListResponsePacket : public PacketHeader
 	{
-		uint16 roomCnt;
+		RoomListResponsePacket() { type = ROOM_LIST_RESPONSE_PACKET; }
+		uint16 roomCnt = 0;
 		RoomInfo roomInfos[0];
 	};	
 
+	// GameReadyPacket
+	struct GameReadyRequestPacket : public PacketHeader
+	{
+	public:
+		GameReadyRequestPacket() { type = GAME_READY_REQUEST_PACKET; size = sizeof(isReady); }
+		bool isReady = false;
+	};
+
+	struct GameReadyNotifyPacket : public PacketHeader
+	{
+	public:
+		GameReadyNotifyPacket() { type = GAME_READY_NOTIFY_PACKET; size = sizeof(isReady) + sizeof(userId); }
+		bool isReady = false;
+		ULONGLONG userId = 0;
+	};
+
+	struct GameStartNotifyPacket : public PacketHeader
+	{
+		GameStartNotifyPacket() { type = GAME_START_NOTIFY_PACKET;}
+	};
 }
 
+// ---- LAN
+namespace C_Network
+{
+	struct GameServerInfoNotifyPacket :public PacketHeader
+	{
+		GameServerInfoNotifyPacket() { type = GAME_SERVER_INFO_NOTIFY_PACKET; size = sizeof(ipStr) + sizeof(port) + sizeof(roomNum) + sizeof(xorToken); }
+
+		WCHAR ipStr[IP_STRING_LEN] = {};
+		uint16 port = 0;
+		uint16 roomNum = 0;
+		ULONGLONG xorToken = 0;
+	};
+
+	struct GameServerInfoResponsePacket :public PacketHeader
+	{
+		GameServerInfoResponsePacket() { type = GAME_SERVER_INFO_RESPONSE_PACKET; }
+	};
+}
+
+// ------ GAME
+namespace C_Network
+{
+	struct EnterGameRequestPacket :public PacketHeader
+	{
+		EnterGameRequestPacket() { type = ENTER_GAME_REQUEST_PACKET; size = sizeof(userId) + sizeof(token); }
+
+		ULONGLONG userId = 0;
+		ULONGLONG token = 0;
+	};
+
+	struct EnterGameResponsePacket : public PacketHeader
+	{
+		EnterGameResponsePacket() { type = ENTER_GAME_RESPONSE_PACKET; }
+	};
+
+	struct MakeMyCharacterPacket : public PacketHeader
+	{
+		MakeMyCharacterPacket() { type = MAKE_MY_CHARACTER_PACKET; size = sizeof(userId) + sizeof(pos); }
+		ULONGLONG userId = 0;
+		Vector3 pos;
+	};
+
+	struct MakeOtherCharacterPacket : public PacketHeader
+	{
+		MakeOtherCharacterPacket() { type = MAKE_OTHER_CHARACTER_PACKET; size = sizeof(userId) + sizeof(pos); }
+		ULONGLONG userId = 0;
+		Vector3 pos;
+	};
+}
+
+
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, Vector3 vector);
 // Only Has Head Packet
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::PacketHeader& packetHeader);
 
@@ -262,6 +357,7 @@ serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::E
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::EnterRoomNotifyPacket& enterRoomNotifyPacket); 
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket); 
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket); 
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::GameReadyNotifyPacket& gameReadyNotifyPacket);
 
 // >> opeartor 정의, >> operator는 PacketHeader에 대한 분리를 진행했기에 packetHeader의 데이터는 신경쓰지 않아도 된다.
 serializationBuffer& operator>> (serializationBuffer& serialBuffer, C_Network::LogInRequestPacket& logInRequestPacket);

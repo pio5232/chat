@@ -3,7 +3,7 @@
 
 #include <sstream>
 
-C_Network::User::User(ULONGLONG userId, SharedSession sharedSession) : _userId(userId), _winCnt(0),_loseCnt(0), _mySession(sharedSession) // , _sessionId(sessionId)
+C_Network::User::User(ULONGLONG userId, SharedSession sharedSession) : _userId(userId), _winCnt(0), _mySession(sharedSession), _isReady(false) // , _sessionId(sessionId)
 {
 	static volatile ULONG nickGenerator = 1;
 

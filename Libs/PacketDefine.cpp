@@ -2,6 +2,13 @@
 #include "PacketDefine.h"
 #include "CSerializationBuffer.h"
 
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, Vector3 vector)
+{
+	serialBuffer << vector.x << vector.y << vector.z;
+
+	return serialBuffer;
+}
+
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::PacketHeader& packetHeader)
 {
 	serialBuffer << packetHeader.size << packetHeader.type;
@@ -77,7 +84,6 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::En
 	serialBuffer << EnterRoomResponsePacket.size << EnterRoomResponsePacket.type << EnterRoomResponsePacket.bAllow << EnterRoomResponsePacket.idCnt;
 
 	return serialBuffer;
-	// TODO: 여기에 return 문을 삽입합니다.
 }
 
 
@@ -86,7 +92,6 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::En
 	serialBuffer << enterRoomNotifyPacket.size << enterRoomNotifyPacket.type << enterRoomNotifyPacket.enterUserId;
 
 	return serialBuffer;
-	// TODO: 여기에 return 문을 삽입합니다.
 }
 
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::LeaveRoomNotifyPacket& leaveRoomNotifyPacket)
@@ -99,6 +104,13 @@ serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::Le
 serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket)
 {
 	serialBuffer << ownerChangeNotifyPacket.size << ownerChangeNotifyPacket.type << ownerChangeNotifyPacket.userId;
+
+	return serialBuffer;
+}
+
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, C_Network::GameReadyNotifyPacket& gameReadyNotifyPacket)
+{
+	serialBuffer << gameReadyNotifyPacket.size << gameReadyNotifyPacket.type << gameReadyNotifyPacket.isReady << gameReadyNotifyPacket.userId;
 
 	return serialBuffer;
 }
@@ -140,7 +152,6 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::En
 	serialBuffer >> enterRoomNotifyPacket.enterUserId;
 
 	return serialBuffer;
-	// TODO: 여기에 return 문을 삽입합니다.
 }
 
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::EnterRoomRequestPacket& enterRoomRequestPacket)
@@ -150,7 +161,6 @@ serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::En
 	serialBuffer.GetData(reinterpret_cast<char*>(enterRoomRequestPacket.roomName), ROOM_NAME_MAX_LEN * MESSAGE_SIZE);
 
 	return serialBuffer;
-	// TODO: 여기에 return 문을 삽입합니다.
 }
 
 serializationBuffer& operator>>(serializationBuffer& serialBuffer, C_Network::OwnerChangeNotifyPacket& ownerChangeNotifyPacket)

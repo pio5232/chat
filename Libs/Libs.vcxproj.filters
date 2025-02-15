@@ -92,6 +92,7 @@
     <ClCompile Include="GlobalQueue.cpp">
       <Filter>Job</Filter>
     </ClCompile>
+    <ClCompile Include="BaseComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LibsPch.h">
@@ -177,5 +178,6 @@
     <ClInclude Include="GlobalQueue.h">
       <Filter>Job</Filter>
     </ClInclude>
+    <ClInclude Include="BaseComponent.h" />
   </ItemGroup>
 </Project>

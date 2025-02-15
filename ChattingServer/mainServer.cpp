@@ -13,7 +13,7 @@ ChattingServer server(NetAddress(std::wstring(L"127.0.0.1"),ServerPort),6000);
 int main()
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
+	
 	if (server.Begin() != C_Network::NetworkErrorCode::NONE)
 	{
 		printf("Begin : 에러 발생\n");

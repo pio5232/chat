@@ -27,10 +27,12 @@ namespace C_Network
 		uint16 GetRoomNum() const { return _roomNumber; }
 		ULONGLONG GetOwnerId() const { return _ownerId; }
 		void* GetRoomNamePtr() { return _roomName; }
-
-
-	private:
+		uint16 GetReadyCnt() { return _readyCnt; }
+		void SetReady(ULONGLONG userId, bool isReady, bool sendOpt);
 		NetworkErrorCode SendToAll(SharedSendBuffer sharedSendBuffer, ULONGLONG excludedId = 0, bool isexcluded = false);
+
+		//NetworkErrorCode SendGameServerInfo(SharedSendBuffer sharedSendBuffer);
+	private:
 		ErrorCode SendToUser(SharedSendBuffer sharedSendBuffer, ULONGLONG userId);
 
 		std::unordered_map<ULONGLONG, std::weak_ptr<C_Network::User>> _userMap;
@@ -45,5 +47,7 @@ namespace C_Network
 		class RoomManager* _roomMgr;
 		class UserManager* _userMgr;
 		class ServerBase* _owner;
+
+		uint16 _readyCnt;
 	};
 }

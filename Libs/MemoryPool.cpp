@@ -49,13 +49,11 @@ C_Memory::MemoryProtector* C_Memory::MemoryProtector::Detach(void* ptr)
 	if (base->_frontGuard != GUARD_VALUE) // left guard
 	{
 		std::cout << "Left Guard is Not 0xaabbccdd\n";
-		TODO_TLS_LOG_ERROR
 	}
 
 	if (*reinterpret_cast<MemoryGuard*>(reinterpret_cast<char*>(base) + base->_size - MemoryProtector::_rightGuardSpace) != GUARD_VALUE)
 	{
 		std::cout << "Right Guard is Not 0xaabbccdd\n";
-		TODO_TLS_LOG_ERROR
 	}
 
 	return base;
@@ -145,7 +143,6 @@ void* C_Memory::PoolManager::Alloc(uint size)
 
 	if (!ptr)
 	{
-		TODO_TLS_LOG_ERROR;
 		std::cout << "Ptr is Null!!!!!!!\n";
 	}
 	return MemoryProtector::Attach(ptr, allocSize);
@@ -254,7 +251,7 @@ C_Memory::PoolManager::PoolManager()
 		case 2048 + 256 * 6: new (_pools[i]) MemoryPool<2048 + 256 * 6>(); break;
 		case 2048 + 256 * 7: new (_pools[i]) MemoryPool<2048 + 256 * 7>(); break;
 		case 2048 + 256 * 8: new (_pools[i]) MemoryPool<2048 + 256 * 8>(); break;
-		default: std::cout << "there is no size [ " << PoolInfo::consArray[i] << " ]\n"; TODO_TLS_LOG_ERROR;  break;
+		default: std::cout << "there is no size [ " << PoolInfo::consArray[i] << " ]\n";  break;
 		}
 	}
 }

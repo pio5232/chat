@@ -1,7 +1,7 @@
 #pragma once
 
-// Packet 처리 과정에서 발생한 에러 또는 네트워크가 아닌 에러.
-enum class ErrorCode : uint16 // 클라에서 요청한 작업이 서버에서 잘 처리가 되었는지 진행 결과를 출력, 전송
+// AA NetErrorCode 합치고 다시 정리
+enum class ErrorCode : uint16 
 {
 	NONE = 0, // 정상
 
@@ -9,7 +9,7 @@ enum class ErrorCode : uint16 // 클라에서 요청한 작업이 서버에서 잘 처리가 되었�
 	CREATE_ROOM_FAILED,
 	MAX_ROOM,
 	ACCESS_DESTROYED_ROOM, // 삭제된 room에 접근
-	CANNOT_FIND_ROOM, // roomNum으로 room을 찾지 못함. 
+	CANNOT_FIND_ROOM, // roomNum으로 room을 찾지 못함. 또는 User가 Room을 가지고 있는데 그 Room이 존재하지 않는 상태
 	ALREADY_EXIST_ROOM, // 존재하면 안되는데.. room이 존재하는 상태.
 
 	SESSION_USER_NOT_MAPPED, // UserManager에서 관리하는 sessionId <-> userIdx 에 대한 맵핑이 제대로 되지 않음 (여러가지 이유로)
@@ -22,4 +22,6 @@ enum class ErrorCode : uint16 // 클라에서 요청한 작업이 서버에서 잘 처리가 되었�
 	ACCESS_DELETE_MEMBER, // 삭제된 멤버에 접근.
 
 	POST_UI_UPDATE_FAILED, // UITaskManager에 postMessage가 실패했다.
+
+	WRONG_TOKEN,
 };

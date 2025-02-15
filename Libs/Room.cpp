@@ -5,7 +5,7 @@
 #include "ClientPacketHandler.h"
 
 C_Network::Room::Room(C_Network::ServerBase* owner, UserManager* userMgr, class RoomManager* roomMgr, ULONGLONG ownerId, uint16 maxUserCnt, uint16 roomNum, WCHAR* roomName) : _owner(owner), _maxUserCnt(maxUserCnt), _userMgr(userMgr),
-_ownerId(ownerId), _roomNumber(roomNum), _roomMgr(roomMgr)
+_ownerId(ownerId), _roomNumber(roomNum), _roomMgr(roomMgr), _readyCnt(0)
 {
 	wmemcpy_s(_roomName, ROOM_NAME_MAX_LEN, roomName, ROOM_NAME_MAX_LEN);
 
@@ -31,36 +31,65 @@ void C_Network::Room::EnterRoom(ULONGLONG userId)
 	responsePacket.size = sizeof(responsePacket.bAllow) + sizeof(responsePacket.idCnt);
 	if (_maxUserCnt == _userMap.size())
 	{
-		responsePacket.bAllow = false;
-		responsePacket.idCnt = 0;
-
-		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(responsePacket);
+		SharedSendBuffer sendBuffer = ChattingClientPacketHandler::MakeErrorPacket(PacketErrorCode::FULL_ROOM);
 
 		_owner->Send(sharedUser->GetSessionId(), sendBuffer);
+		
+		printf("EnterRoom Failed - RoomCnt is Full");
 
-		printf("EnterRoom - RoomCnt is Full");
+		return;
+	}
+	else if (_roomState == RoomState::RUNNING)
+	{
+		SharedSendBuffer sendBuffer = ChattingClientPacketHandler::MakeErrorPacket(PacketErrorCode::ALREADY_RUNNING_ROOM);
+
+		_owner->Send(sharedUser->GetSessionId(), sendBuffer);
+		
+		printf("EnterRoom Failed - Room is Running");
+
 		return;
 	}
 
 	sharedUser->SetRoom(std::static_pointer_cast<C_Network::Room>(shared_from_this()));
 
 	responsePacket.bAllow = true;
-	responsePacket.idCnt = _userMap.size();
+	responsePacket.idCnt = 0;// _userMap.size();
 	responsePacket.size += _userMap.size() * sizeof(ULONGLONG);
 
 	{
 		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakeSendBuffer(sizeof(responsePacket) + responsePacket.size);
 
-		*sendBuffer << responsePacket;
+		std::vector<ULONGLONG> tempVec;
+		tempVec.reserve(_userMap.size());
+
 		for (auto& pair : _userMap)
 		{
-			*sendBuffer << pair.first;
+			if (pair.second.expired())
+				continue;
+
+			SharedUser user = pair.second.lock();
+
+			ULONGLONG idAndReadyState = user->GetUserId() | ((ULONGLONG)user->GetReady() << 63);
+
+			responsePacket.idCnt++;
+
+			tempVec.push_back(idAndReadyState);
+
+			//*sendBuffer << pair.first;
+		}
+		*sendBuffer << responsePacket;
+
+		for (ULONGLONG idAndReadyState : tempVec)
+		{
+			*sendBuffer << idAndReadyState;
 		}
 
 		_userMap.insert(std::make_pair(userId, user));
 
 		SendToUser(sendBuffer, userId);
 	}
+
+	sharedUser->SetReady(false);
 
 	C_Network::EnterRoomNotifyPacket enterNotifyPacket;
 	enterNotifyPacket.enterUserId = userId;
@@ -81,11 +110,13 @@ void C_Network::Room::LeaveRoom(ULONGLONG userId)
 	}
 
 	std::weak_ptr<User> user = _userMgr->GetUserByUserId(userId);
+	bool isReady = false;
 	if (!user.expired())
 	{
 		SharedUser sharedUser = user.lock();
 
 		sharedUser->SetRoom(std::weak_ptr<C_Network::Room>()); 
+		isReady = sharedUser->GetReady();
 	}
 
 	_userMap.erase(userId);
@@ -110,15 +141,21 @@ void C_Network::Room::LeaveRoom(ULONGLONG userId)
 		{
 			printf("방장이 나가서 위임\n");
 			_ownerId = _userMap.begin()->first;
-			
+
 			C_Network::OwnerChangeNotifyPacket ownerChangeNotifyPacket;
 			ownerChangeNotifyPacket.userId = _ownerId;
+
+			SetReady(_ownerId, false, false);
 
 			C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(ownerChangeNotifyPacket);
 
 			SendToAll(sendBuffer);
 		}
-
+		else
+		{
+			if(isReady)
+			_readyCnt--;
+		}
 	}
 }
 
@@ -127,6 +164,53 @@ void C_Network::Room::ChatRoom(ULONGLONG sendUserId, SharedSendBuffer chatNotify
 	SendToAll(chatNotifyBuffer);// , sendUserId, true);
 }
 
+
+void C_Network::Room::SetReady(ULONGLONG userId, bool isReady, bool sendOpt) // Ready 정보를 모두에게 알릴 것인가. (방장 교체의 경우 false => 알리지 않는다.)
+{
+	std::weak_ptr<User> user = _userMap[userId];
+	if (user.expired())
+	{
+		printf("SetReady... User is Not Exist\n");
+		return;
+	}
+	SharedUser sharedUser = user.lock();
+
+	if (sharedUser->GetReady() == isReady)
+		return;
+
+	sharedUser->SetReady(isReady);
+
+	if (isReady)
+		_readyCnt++;
+	else
+		_readyCnt--;
+
+	if (userId == _ownerId && _readyCnt == GetCurUserCnt())
+	{
+		C_Network::GameStartNotifyPacket startNotifyPacket;
+
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(startNotifyPacket);
+
+		SendToAll(sendBuffer);
+
+		std::wstring path(L"E:\\GameServer\\x64\\Debug\\GameServer.exe");
+		std::wstring args(std::to_wstring(_roomNumber) + L" " + std::to_wstring(GetCurUserCnt()) + L" " + std::to_wstring(GetMaxUserCnt()));
+		wprintf(L"path : %s    args : %s", path, args);
+		ExecuteProcess(path, args);
+		return;
+	}
+
+	if (sendOpt)
+	{
+		C_Network::GameReadyNotifyPacket readyNotifyPacket;
+		readyNotifyPacket.userId = userId;
+		readyNotifyPacket.isReady = isReady;
+
+		C_Network::SharedSendBuffer sendBuffer = C_Network::ChattingClientPacketHandler::MakePacket(readyNotifyPacket);
+
+		SendToAll(sendBuffer);
+	}
+}
 
 C_Network::NetworkErrorCode C_Network::Room::SendToAll(SharedSendBuffer sharedSendBuffer, ULONGLONG excludedId, bool isexcluded)
 {
@@ -141,10 +225,15 @@ C_Network::NetworkErrorCode C_Network::Room::SendToAll(SharedSendBuffer sharedSe
 			_owner->Send(user->GetSessionId(), sharedSendBuffer);
 		}
 	}
-	
 	 
 	return C_Network::NetworkErrorCode::NONE;
 }
+
+//C_Network::NetworkErrorCode C_Network::Room::SendGameServerInfo(SharedSendBuffer sharedSendBuffer)
+//{
+//	
+//	return NetworkErrorCode();
+//}
 
 ErrorCode C_Network::Room::SendToUser(SharedSendBuffer sharedSendBuffer, ULONGLONG userId)
 {

@@ -2,6 +2,11 @@
 #include <MSWSock.h>
 namespace C_Network
 {
+	enum NetCallbackType : uint16
+	{
+		SEND_IPENDPOINT = 0,
+	};
+
 	enum : uint
 	{
 		RECV_BUF_CLEAR_SIZE = 0x1000,

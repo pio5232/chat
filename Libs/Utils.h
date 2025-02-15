@@ -46,7 +46,7 @@ namespace C_Utility
 			for (int i = maxElementCnt - 1; i >= 0; i--)
 			{
 				_availableElementidxList.push(i);
-				// TODO: POOL
+				// AA
 				T* newElement = new T(args...);
 				_elementArr.push_back(newElement);
 			}
@@ -150,3 +150,38 @@ namespace C_Utility
 		std::queue<T> _queue;
 	};
 }
+
+void ExecuteProcess(const std::wstring& path, const std::wstring& args);
+
+struct Vector3
+{
+	Vector3();
+	Vector3(float x, float y, float z);
+
+	static Vector3 Zero()
+	{
+		return Vector3();
+	}
+	Vector3(const Vector3& other)
+	{
+		x = other.x;
+		y = other.y;
+		z = other.z;
+	}
+
+	Vector3& operator= (const Vector3& other)
+	{
+		if (this != &other)
+		{
+			x = other.x;
+			y = other.y;
+			z = other.z;
+		}
+
+		return *this;
+	}
+
+	float x;
+	float y;
+	float z;
+};

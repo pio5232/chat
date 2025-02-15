@@ -19,7 +19,6 @@ namespace C_Network
 		uint GetUserCount() { return _sessionIdToUserMap.size(); }
 	private:
 
-		// TODO : 후에 READ_LOCK도 만든다면 속도의 향상을 기대할 수도 있을 것 같다.
 		SRWLOCK _lock;
 
 		// UserId -> SessionId는 user가 Login 할 때 자신의 session id를 등록할 수 있도록 한다.

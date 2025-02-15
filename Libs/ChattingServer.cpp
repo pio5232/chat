@@ -14,12 +14,36 @@ C_Network::ChattingServer::ChattingServer(const NetAddress& netAddr, uint maxSes
 	_roomMgr = std::make_unique<RoomManager>(this, roomCnt, maxRoomUserCnt,_userMgr.get());
 
 	_monitor = std::make_unique<C_Utility::ChatMonitor>(_roomMgr.get(), _userMgr.get());
-			// TODO : USE POOL, 스마트 포인터에 대해서도 pool을 적용할 수 있다면 좋을 것임.
+
+	// AA
 	_packetHandler = new ChattingClientPacketHandler(this, _roomMgr.get(), _userMgr.get(), _sessionMgr.get());
+
+	_lanServer = std::make_unique<C_Network::LanServer>(NetAddress(netAddr.GetIpAddress(), LanServerPort), 10);
+	
+	if (_userMgr == nullptr || _roomMgr == nullptr || _monitor == nullptr || _lanServer == nullptr)
+	{
+		printf("ChattingServer Initializing Failed\n");
+		return;
+	}
+
+	_lanServer->RegistCallback([this](C_Network::SharedSendBuffer buffer, uint16 roomNum, NetCallbackType callbackType)
+		{
+			if (roomNum == 0)
+			{
+				SendToAllUser(buffer, callbackType);
+			}
+			else
+			{
+				SendToRoom(buffer, roomNum, callbackType);
+			}
+		});
+	_lanServer->Begin(true);
+
 }
 
 C_Network::ChattingServer::~ChattingServer()
 {
+	_lanServer->End();
 	delete _packetHandler;
 }
 
@@ -51,7 +75,6 @@ void C_Network::ChattingServer::OnDisconnected(ULONGLONG sessionId)
 	}
 
 	_userMgr->DeleteUser(sharedUser->GetUserId());
-	 //TODO : 해당 세션의 user Id 를 찾아서 데이터 저장 및 제거 필요.
 }
 
 void C_Network::ChattingServer::OnError(int errCode, WCHAR* cause)
@@ -61,15 +84,25 @@ void C_Network::ChattingServer::OnError(int errCode, WCHAR* cause)
 void C_Network::ChattingServer::OnRecv(C_Utility::CSerializationBuffer& buffer, ULONGLONG sessionId, uint16 type)
 {
 	if (_packetHandler->ProcessPacket(sessionId, type, buffer) == ErrorCode::CANNOT_FIND_PACKET_FUNC)
-		TODO_LOG;
+	{
+
+	}
 }
 
-C_Network::NetworkErrorCode C_Network::ChattingServer::SendToAllUser(C_Network::SharedSendBuffer& buffer)
+
+C_Network::NetworkErrorCode C_Network::ChattingServer::SendToAllUser(C_Network::SharedSendBuffer buffer, NetCallbackType callbackType)
 {
 	return NetworkErrorCode();
 }
 
-C_Network::NetworkErrorCode C_Network::ChattingServer::SendToRoom(C_Network::SharedSendBuffer& buffer, uint16 roomNum)
+C_Network::NetworkErrorCode C_Network::ChattingServer::SendToRoom(C_Network::SharedSendBuffer buffer, uint16 roomNum, NetCallbackType callbackType)
 {
-	return NetworkErrorCode();
+	if (callbackType == NetCallbackType::SEND_IPENDPOINT)
+	{
+		SharedRoom sharedRoom = _roomMgr->GetRoom(roomNum);
+		
+		sharedRoom->DoAsync(&Room::SendToAll, buffer, 0UI64, false);
+	}
+
+	return NetworkErrorCode::NONE;
 }
