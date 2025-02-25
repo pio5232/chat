@@ -225,7 +225,6 @@ namespace C_Memory
 				_pInnerChunk->Regist(_aligned_malloc(AllocSize, 64));
 			}
 
-			TODO_TLS_LOG_SUCCESS;
 		}
 		virtual ~MemoryPool() override
 		{
