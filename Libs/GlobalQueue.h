@@ -5,9 +5,9 @@ public:
 	GlobalQueue();
 	~GlobalQueue();
 
-	void Push(SharedJobQueue sharedJobQueue);
-	SharedJobQueue Pop();
+	void Push(JobQueuePtr sharedJobQueue);
+	JobQueuePtr Pop();
 private:
-	C_Utility::LockQueue<SharedJobQueue> _queue;
+	C_Utility::LockQueue<JobQueuePtr> _queue;
 };
 

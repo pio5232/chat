@@ -23,30 +23,30 @@ namespace C_Utility
 
 	};
 
-	class NetMonitor : public CMonitor
-	{
-	public:
-		NetMonitor(class C_Network::SessionManager* sessionMgr) : _sessionMgr(sessionMgr) {}
+	//class NetMonitor : public CMonitor
+	//{
+	//public:
+	//	NetMonitor(class C_Network::SessionManager* sessionMgr) : _sessionMgr(sessionMgr) {}
 
-		virtual void MonitoringJob() override;
+	//	virtual void MonitoringJob() override;
 
-		ULONG IncSendCount() { return InterlockedIncrement(&_sendCount); }
-		ULONG IncRecvCount() { return InterlockedIncrement(&_recvCount); }
-	private:		
-		class C_Network::SessionManager* const _sessionMgr;
+	//	ULONG IncSendCount() { return InterlockedIncrement(&_sendCount); }
+	//	ULONG IncRecvCount() { return InterlockedIncrement(&_recvCount); }
+	//private:		
+	//	class C_Network::SessionManager* const _sessionMgr;
 
-		volatile ULONG _sendCount = 0; // 1초에 몇 번씩 send 완료통지처리 / recv 완료통지 처리 체크,
-		volatile ULONG _recvCount = 0;
-	};
+	//	volatile ULONG _sendCount = 0; // 1초에 몇 번씩 send 완료통지처리 / recv 완료통지 처리 체크,
+	//	volatile ULONG _recvCount = 0;
+	//};
 
-	class ChatMonitor : public CMonitor
-	{
-	public:
-		ChatMonitor(class C_Network::RoomManager* roomMgr, class C_Network::UserManager* userMgr) : _roomMgr(roomMgr), _userMgr(userMgr) {}
-		virtual void MonitoringJob() override;
-	private:
-		class C_Network::RoomManager* _roomMgr;
-		class C_Network::UserManager* _userMgr;
-	};
+	//class ChatMonitor : public CMonitor
+	//{
+	//public:
+	//	ChatMonitor(class C_Network::RoomManager* roomMgr, class C_Network::UserManager* userMgr) : _roomMgr(roomMgr), _userMgr(userMgr) {}
+	//	virtual void MonitoringJob() override;
+	//private:
+	//	class C_Network::RoomManager* _roomMgr;
+	//	class C_Network::UserManager* _userMgr;
+	//};
 
 }

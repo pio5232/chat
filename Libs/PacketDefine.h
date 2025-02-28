@@ -100,12 +100,12 @@ namespace C_Network
 	};
 
 	// ECHO REQUEST / RESPONSE
-	struct EchoPacket : public PacketHeader
-	{
-	public:
-		EchoPacket() : data(0) { size = sizeof(__int64), type = ECHO_PACKET; }
-		__int64 data;
-	};
+	//struct EchoPacket : public PacketHeader
+	//{
+	//public:
+	//	EchoPacket() : data(0) { size = sizeof(__int64), type = ECHO_PACKET; }
+	//	__int64 data;
+	//};
 
 	struct ErrorPacket : public PacketHeader
 	{

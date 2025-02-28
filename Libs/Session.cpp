@@ -19,8 +19,8 @@ void C_Network::IocpEvent::Reset()
 ------------------------------*/
 
 // new로 했을 때 사용.
-C_Network::Session::Session(SOCKET sock,const SOCKADDR_IN* pSockAddr) : _socket(sock), _recvEvent(), _sendEvent(),_connectEvent(),
-_targetNetAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0), _isDisconn(0)
+C_Network::Session::Session() : _socket(INVALID_SOCKET), _recvEvent(), _sendEvent(), _isDisconn(0),
+_targetNetAddr(), _sendFlag(0), _recvBuffer()
 {
 	InitializeSRWLock(&_sendBufferLock);
 
@@ -28,15 +28,25 @@ _targetNetAddr(*pSockAddr), _sendFlag(0), _recvBuffer(),_ioCount(0), _isDisconn(
 	static  ULONGLONG sessionId = 0;
 
 	_sessionId = InterlockedIncrement(&sessionId);;
+
+	_ownerServer = std::weak_ptr<C_Network::ServerBase>();
 }
 
 C_Network::Session::~Session()
 {
 	if (_socket != INVALID_SOCKET)
 	{
+		printf("Session 종료");
 		closesocket(_socket);
 		_socket = INVALID_SOCKET;
 	}
+}
+
+void C_Network::Session::Init(SOCKET sock, const SOCKADDR_IN* pSockAddr, std::weak_ptr<C_Network::ServerBase> owner)
+{
+	_socket = sock;
+	_targetNetAddr = *pSockAddr;
+	_ownerServer = owner;
 }
 
 void C_Network::Session::Send(SharedSendBuffer sendBuf)
@@ -50,7 +60,90 @@ void C_Network::Session::Send(SharedSendBuffer sendBuf)
 }
 
 
-C_Network::NetworkErrorCode C_Network::Session::ProcessSend(DWORD transferredBytes)
+ErrorCode C_Network::Session::ProcessRecv(DWORD transferredBytes)
+{
+	_recvEvent._owner = nullptr;
+
+	if (transferredBytes == 0)
+	{
+		Disconnect();
+		//printf("정상 종료\n");
+		return ErrorCode::NONE; // 정상 종료로 판단.
+	}
+
+	if (!_recvBuffer.MoveRearRetBool(transferredBytes))
+	{
+		printf("Buffer Size Overflow\n");
+	
+		Disconnect();
+
+		return ErrorCode::RECV_BUF_OVERFLOW;
+	}
+
+	uint dataSize = _recvBuffer.GetUseSize();
+
+	uint processingLen = 0;
+
+	C_Utility::CSerializationBuffer tempBuffer(3000);
+
+	while (1)
+	{
+		tempBuffer.Clear();
+
+		int bufferSize = _recvBuffer.GetUseSize();
+
+		// packetheader보다 작은 상태
+
+
+
+#ifdef ECHO
+		if (bufferSize < sizeof(PacketHeader::size))
+			break;
+#else
+		if (bufferSize < sizeof(PacketHeader))
+			break;
+#endif
+
+		PacketHeader header;
+
+		_recvBuffer.PeekRetBool(reinterpret_cast<char*>(&header), sizeof(PacketHeader));
+
+#ifdef ECHO
+			if (bufferSize < (sizeof(PacketHeader::size) + header.size))
+			break;
+#else
+			if (bufferSize < (sizeof(PacketHeader) + header.size))
+			break;
+#endif
+
+#ifdef ECHO
+		_recvBuffer.MoveFront(sizeof(header.size));
+#else
+		_recvBuffer.MoveFront(sizeof(header));
+#endif
+
+		if (!_recvBuffer.DequeueRetBool(tempBuffer.GetRearPtr(), header.size))
+		{
+			wprintf(L"OnRecv Dequeue Error\n");
+
+			return ErrorCode::RECV_BUF_DEQUE_FAILED;
+		}
+
+		tempBuffer.MoveRearPos(header.size);
+
+#ifdef ECHO
+		OnRecv(tempBuffer, 0);
+#else
+		OnRecv(tempBuffer, header.type);
+#endif
+	}
+
+	PostRecv();
+
+	return ErrorCode::NONE;
+}
+
+ErrorCode C_Network::Session::ProcessSend(DWORD transferredBytes)
 {
 	_sendEvent._owner = nullptr;
 	_sendEvent._pendingBuffs.clear();
@@ -60,41 +153,31 @@ C_Network::NetworkErrorCode C_Network::Session::ProcessSend(DWORD transferredByt
 	if (transferredBytes == 0)
 	{
 		printf("Send Transferred Bytes is 0\n");
-		return C_Network::NetworkErrorCode::SEND_LEN_ZERO;
+		
+		Disconnect();
+		return ErrorCode::SEND_LEN_ZERO;
 	}
 
 	PostSend();
 
-	return C_Network::NetworkErrorCode::NONE;
+	return ErrorCode::NONE;
 }
 
 
-// --------------------------------------------------- ASynchronization ---------------------------------------------------
+
 bool C_Network::Session::ProcessConnect()
 {
-	_connectEvent._owner = nullptr;
+	OnConnected();
 
 	PostRecv();
 
 	return false;
 }
 
-bool C_Network::Session::ProcessAccept()
-{	
-	PostRecv();
-
-	return false;
-}
-
-bool C_Network::Session::ProcessDisconnect()
-{
-	return false;
-}
 
 
 void C_Network::Session::PostSend()
 {
-
 	if (InterlockedExchange8(&_sendFlag, 1) == 1)
 		return;
 
@@ -139,8 +222,6 @@ void C_Network::Session::PostSend()
 		wsabufs.push_back(buf);
 	}
 
-	InterlockedIncrement(&_ioCount);
-
 	int sendRet = WSASend(_socket, wsabufs.data(), wsabufs.size(), nullptr, 0, reinterpret_cast<LPWSAOVERLAPPED>(&_sendEvent), nullptr);
 	
 	if (sendRet == SOCKET_ERROR)
@@ -149,7 +230,6 @@ void C_Network::Session::PostSend()
 		if (wsaErr != WSA_IO_PENDING)
 		{
 			_sendEvent._owner = nullptr;
-			InterlockedDecrement(&_ioCount);
 
 			switch (wsaErr)
 			{
@@ -162,13 +242,14 @@ void C_Network::Session::PostSend()
 				printf("WSASend Error - [ errCode %d ]\n", wsaErr);
 				break;
 			}
+			printf("WSASEND DISCONNECT");
+			Disconnect();
 		}
 	}
 }
 
 void C_Network::Session::PostRecv()
 {
-
 	_recvEvent.Reset();
 	_recvEvent._owner = shared_from_this();
 
@@ -190,7 +271,6 @@ void C_Network::Session::PostRecv()
 
 	DWORD flag = 0;
  	
-	InterlockedIncrement(&_ioCount);
 	int recvRet = WSARecv(_socket, buf, wsabufSize, nullptr, &flag, reinterpret_cast<LPWSAOVERLAPPED>(&_recvEvent), nullptr);
 
 	if (recvRet == SOCKET_ERROR)
@@ -200,7 +280,6 @@ void C_Network::Session::PostRecv()
 		if (wsaErr != WSA_IO_PENDING)
 		{
 			_recvEvent._owner = nullptr;
-			InterlockedDecrement(&_ioCount);
 
 			switch (wsaErr)
 			{
@@ -213,17 +292,14 @@ void C_Network::Session::PostRecv()
 				printf("WSASend Error - [ errCode %d ]\n", wsaErr);
 				break;
 			}
+			printf("WSARECV DISCONNECT");
+
+			Disconnect();
 		}
 	}
 
 
 }
-// --------------------------------------------------- ASynchronization ---------------------------------------------------
-void C_Network::Session::PostAccept()
-{
-
-}
-
 // 강제 종료.
 void C_Network::Session::Disconnect()
 {
@@ -231,43 +307,21 @@ void C_Network::Session::Disconnect()
 
 	if (0 == isDisconnected)
 	{
-		printf("Force Disconnect[SESSION ID : %lld]", GetId());
+		//printf("Force Disconnect[SESSION ID : %lld]", GetSessionId());
+		
+		OnDisconnected();
 
-		closesocket(_socket);
-
-		_socket = INVALID_SOCKET;
+		GetServer()->DeleteSession(GetSessionPtr());
 	}
 }
 
-bool C_Network::Session::CheckDisconnect()
-{
-	ULONG ioCount = InterlockedDecrement(&_ioCount);
 
-	if (ioCount == 0)
-	{
-		char isDisconnected = InterlockedExchange8(&_isDisconn, 1);
-
-		if (0 == isDisconnected)
-		{
-			printf("Disconnect [SESSION ID : %lld]\n", GetId());
-
-			return true;
-		}
-	}
-	return false;
-}
-
-
-void C_Network::Session::PostConnect()
-{
-
-}
 
 // -----------------------------------------------------------------------------------------------------------------------
 
 
 
-SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle)
+SessionPtr C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle, std::shared_ptr<C_Network::ServerBase> owner)
 {
 	if (_sessionCnt == _maxSessionCnt)
 	{
@@ -277,7 +331,9 @@ SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN*
 	}
 	_sessionCnt.fetch_add(1);
 
-	SharedSession newSession = std::make_shared<C_Network::Session>(sock, pSockAddr);
+	SessionPtr newSession = _createFunc();
+
+	newSession->Init(sock, pSockAddr, owner);
 
 	if (nullptr == CreateIoCompletionPort(reinterpret_cast<HANDLE>(sock), iocpHandle, 0, 0))
 	{
@@ -288,7 +344,7 @@ SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN*
 		return nullptr;
 	}
 	
-	ULONGLONG id = newSession->GetId();
+	ULONGLONG id = newSession->GetSessionId();
 	
 	{
 		SRWLockGuard lockGuard(&_lock);
@@ -301,9 +357,9 @@ SharedSession C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN*
 	return newSession;
 } 
 
-void C_Network::SessionManager::DeleteSession(SharedSession session)
+void C_Network::SessionManager::DeleteSession(SessionPtr session)
 {
-	ULONGLONG sessionId = session->GetId();
+	ULONGLONG sessionId = session->GetSessionId();
 
 	{
 		SRWLockGuard lockGuard(&_lock);
@@ -324,11 +380,11 @@ C_Network::SessionManager::~SessionManager()
 	}
 }
 
-SharedSession C_Network::SessionManager::GetSession(ULONGLONG sessionId)
+SessionPtr C_Network::SessionManager::GetSession(ULONGLONG sessionId)
 {
 	SRWSharedLockGuard lockGuard(&_lock);
 
-	std::unordered_map<ULONGLONG, SharedSession>::iterator iter = _idToSessionDic.find(sessionId);
+	std::unordered_map<ULONGLONG, SessionPtr>::iterator iter = _idToSessionDic.find(sessionId);
 
 	if (iter != _idToSessionDic.end())
 		return iter->second;

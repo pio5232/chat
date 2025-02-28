@@ -178,20 +178,12 @@ bool CRingBuffer::PeekRetBool(char* chpDest, int iSize) // Deque와 마찬가지로 성
 		return false;
 	}
 
-	//int direct_dequeue_size = DirectDequeueSize();
-
-	//memcpy_s(chpDest, direct_dequeue_size, &m_pBuffer[m_front], direct_dequeue_size);
-
-	//int extra_dequeue_size = iSize - direct_dequeue_size;
-	//memcpy_s(chpDest + direct_dequeue_size, extra_dequeue_size, m_pBuffer, extra_dequeue_size);
-
 	int direct_dequeue_size = DirectDequeueSize();
 
 	if (iSize > direct_dequeue_size)
 	{
 		memcpy_s(chpDest, direct_dequeue_size, &m_pBuffer[m_front], direct_dequeue_size);
 		int prev_front = m_front;
-		MoveFrontRetBool(direct_dequeue_size);
 
 		int extra_dequeue_size = iSize - direct_dequeue_size;
 		memcpy_s(chpDest + direct_dequeue_size, extra_dequeue_size, &m_pBuffer[m_front], extra_dequeue_size);
@@ -282,7 +274,6 @@ int CRingBuffer::Peek(char* chpDest, int iSize)
 	{
 		memcpy_s(chpDest, direct_dequeue_size, &m_pBuffer[m_front], direct_dequeue_size);
 		int prev_front = m_front;
-		MoveFrontRetBool(direct_dequeue_size);
 
 		int extra_dequeue_size = peekSize - direct_dequeue_size;
 		memcpy_s(chpDest + direct_dequeue_size, extra_dequeue_size, &m_pBuffer[m_front], extra_dequeue_size);

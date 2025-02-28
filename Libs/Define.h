@@ -43,12 +43,14 @@ namespace C_Network
 		WCHAR roomName[ROOM_NAME_MAX_LEN]{};
 	};
 }
+
 const ULONGLONG xorTokenKey = 0x0123456789ABCDEF;
 
-using SharedSession = std::shared_ptr<class C_Network::Session>;
-using SharedJob = std::shared_ptr<class C_Utility::Job>;
-using SharedJobQueue = std::shared_ptr<class C_Utility::JobQueue>;
-using SharedUser = std::shared_ptr<class C_Network::User>;
-using SharedRoom = std::shared_ptr<class C_Network::Room>;
+using SessionPtr = std::shared_ptr<class C_Network::Session>;
+using JobPtr = std::shared_ptr<class C_Utility::Job>;
+using JobQueuePtr = std::shared_ptr<class C_Utility::JobQueue>;
+using UserPtr = std::shared_ptr<class C_Network::User>;
+using RoomPtr = std::shared_ptr<class C_Network::Room>;
+
 
 

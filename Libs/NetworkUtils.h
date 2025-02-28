@@ -2,11 +2,6 @@
 #include <MSWSock.h>
 namespace C_Network
 {
-	enum NetCallbackType : uint16
-	{
-		SEND_IPENDPOINT = 0,
-	};
-
 	enum : uint
 	{
 		RECV_BUF_CLEAR_SIZE = 0x1000,
@@ -26,6 +21,8 @@ namespace C_Network
 		NetAddress(std::wstring ip, uint16 port);
 		NetAddress(const NetAddress& other);
 		NetAddress() {}
+
+		NetAddress& operator=(const SOCKADDR_IN& sockAddr);
 
 		void Init(SOCKADDR_IN sockAddr);
 		const SOCKADDR_IN& GetSockAddr() const { return _sockAddr; }

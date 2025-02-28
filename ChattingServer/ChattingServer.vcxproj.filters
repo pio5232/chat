@@ -7,18 +7,52 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{cfeada43-f46c-459e-9809-bde440db95e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Contents">
+      <UniqueIdentifier>{162c37d5-2697-41e5-a3b1-3e42cc091dae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mainServer.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Main</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="PacketHandler.cpp" />
+    <ClCompile Include="Room.cpp">
+      <Filter>Contents</Filter>
+    </ClCompile>
+    <ClCompile Include="RoomManager.cpp">
+      <Filter>Contents</Filter>
+    </ClCompile>
+    <ClCompile Include="LobbySession.cpp">
+      <Filter>Contents</Filter>
+    </ClCompile>
+    <ClCompile Include="LobbyServer.cpp">
+      <Filter>Contents</Filter>
+    </ClCompile>
+    <ClCompile Include="LobbyMonitor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="PacketHandler.h" />
+    <ClInclude Include="Room.h">
+      <Filter>Contents</Filter>
+    </ClInclude>
+    <ClInclude Include="RoomManager.h">
+      <Filter>Contents</Filter>
+    </ClInclude>
+    <ClInclude Include="LobbyDefine.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="LobbySession.h">
+      <Filter>Contents</Filter>
+    </ClInclude>
+    <ClInclude Include="LobbyServer.h">
+      <Filter>Contents</Filter>
+    </ClInclude>
+    <ClInclude Include="LobbyMonitor.h" />
   </ItemGroup>
 </Project>

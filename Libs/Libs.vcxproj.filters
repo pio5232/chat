@@ -7,37 +7,19 @@
     <Filter Include="Network">
       <UniqueIdentifier>{e5062633-b7c8-4f45-8d5c-fd326339fae2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Utils">
-      <UniqueIdentifier>{6c2d83f5-c904-4feb-b5a6-d20d4cf378fb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Contents">
       <UniqueIdentifier>{2117b99a-b2aa-45c5-8d4e-53ccf3db3ba5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Job">
       <UniqueIdentifier>{984f31ff-096b-4fa9-92e3-eedef4cf6cb3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{a311047c-0e52-4a63-87e2-7c0d8ee698a2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LibsPch.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="MemoryPool.cpp">
       <Filter>Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="CLog.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="TlsProfiler.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Functor.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="CCrashDump.cpp">
-      <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="NetworkBase.cpp">
       <Filter>Network</Filter>
@@ -48,38 +30,8 @@
     <ClCompile Include="NetworkUtils.cpp">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="CRingBuffer.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="CSerializationBuffer.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="PacketDefine.cpp">
       <Filter>Network</Filter>
-    </ClCompile>
-    <ClCompile Include="UserManager.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="User.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="RoomManager.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="Room.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="ChattingServer.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="EchoServer.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="ClientPacketHandler.cpp">
-      <Filter>Contents</Filter>
-    </ClCompile>
-    <ClCompile Include="CMonitor.cpp">
-      <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="GlobalInstance.cpp" />
     <ClCompile Include="TLSInstance.cpp" />
@@ -93,31 +45,40 @@
       <Filter>Job</Filter>
     </ClCompile>
     <ClCompile Include="BaseComponent.cpp" />
+    <ClCompile Include="CCrashDump.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="CLog.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="CMonitor.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="CRingBuffer.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="CSerializationBuffer.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Functor.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="LibsPch.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="TlsProfiler.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="PacketMaker.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LibsPch.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
     <ClInclude Include="MemoryPool.h">
       <Filter>Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="CLog.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="TlsProfiler.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Functor.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Define.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="CCrashDump.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="NetworkBase.h">
       <Filter>Network</Filter>
@@ -130,39 +91,6 @@
     </ClInclude>
     <ClInclude Include="PacketDefine.h">
       <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="CRingBuffer.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="CSerializationBuffer.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkErrorCode.h">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="UserManager.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="User.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="RoomManager.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="Room.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="ChattingServer.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="EchoServer.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientPacketHandler.h">
-      <Filter>Contents</Filter>
-    </ClInclude>
-    <ClInclude Include="CMonitor.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="ErrorCode.h">
       <Filter>Contents</Filter>
@@ -179,5 +107,38 @@
       <Filter>Job</Filter>
     </ClInclude>
     <ClInclude Include="BaseComponent.h" />
+    <ClInclude Include="CCrashDump.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CLog.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CMonitor.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CRingBuffer.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CSerializationBuffer.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Define.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Functor.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="LibsPch.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="TlsProfiler.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketMaker.h">
+      <Filter>Network</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

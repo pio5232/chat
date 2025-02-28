@@ -10,7 +10,7 @@ namespace C_Utility
 
 		void DoAsync(CallbackFunc&& callback)
 		{
-			SharedJob job = std::make_shared<C_Utility::Job>(std::move(callback));
+			JobPtr job = std::make_shared<C_Utility::Job>(std::move(callback));
 
 ;			Push(job);
 		}
@@ -20,16 +20,16 @@ namespace C_Utility
 		{ 
 			std::shared_ptr<T> owner = std::static_pointer_cast<T>(shared_from_this());
 
-			SharedJob job = std::make_shared<C_Utility::Job>(owner, memFunc, std::forward<Args>(args)...);
+			JobPtr job = std::make_shared<C_Utility::Job>(owner, memFunc, std::forward<Args>(args)...);
 
 			Push(job);
 		}
 
-		void Push(SharedJob job);
+		void Push(JobPtr job);
 		void Execute();
 		void ClearJob() { _jobQueue.Clear(); }
 	protected:
-		C_Utility::LockQueue<SharedJob> _jobQueue;
+		C_Utility::LockQueue<JobPtr> _jobQueue;
 		std::atomic<uint> _jobCount;
 	};
 

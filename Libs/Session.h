@@ -8,13 +8,13 @@
 
 namespace C_Network
 {
+	using SessionCreator = std::function<SessionPtr()>;
+
 	/*----------------------
 			IocpEvent
 	----------------------*/
 	enum class IocpEventType : unsigned char
 	{
-		Accept,
-		Connect,
 		Recv,
 		Send,
 		EventMax,
@@ -27,7 +27,7 @@ namespace C_Network
 		IocpEvent(IocpEventType type);
 		void Reset();
 		 
-		SharedSession _owner;
+		SessionPtr _owner;
 
 		const IocpEventType _type;
 	};
@@ -46,12 +46,6 @@ namespace C_Network
 		std::vector<SharedSendBuffer> _pendingBuffs;
 	};
 
-	struct ConnectEvent : public IocpEvent
-	{
-	public:
-		ConnectEvent() : IocpEvent(IocpEventType::Connect) {}
-	};
-
 
 	/*------------------------------
 				Session 
@@ -59,33 +53,34 @@ namespace C_Network
 	struct Session : public std::enable_shared_from_this<Session>
 	{
 	public:
-		Session(SOCKET sock,const SOCKADDR_IN* pSockAddr);
+		Session();
 		~Session();
 
+		void Init(SOCKET sock, const SOCKADDR_IN* pSockAddr, std::weak_ptr<class ServerBase> owner);
 		void Send(SharedSendBuffer sendBuf);
 
-		//bool ProcessRecv(DWORD transferredBytes);
-		C_Network::NetworkErrorCode ProcessSend(DWORD transferredBytes);
 		bool ProcessConnect();
-		bool ProcessAccept();
-		bool ProcessDisconnect();
 
 		const NetAddress& GetNetAddr() const { return _targetNetAddr; }
 		SOCKET GetSock() const { return _socket; }
-		ULONGLONG GetId () const { return _sessionId; }
+		ULONGLONG GetSessionId () const { return _sessionId; }
 
+		ErrorCode ProcessRecv(DWORD transferredBytes);
+		ErrorCode ProcessSend(DWORD transferredBytes);
 		// Regist.
 		void PostSend();
 		void PostRecv();
-		void PostConnect();
-		void PostAccept();
 
 		void Disconnect();
 
-		bool CheckDisconnect();
+		virtual void OnConnected() = 0;
+		virtual void OnDisconnected() = 0;
+		virtual void OnRecv(C_Utility::CSerializationBuffer& buffer, uint16 type) = 0;
 
+		SessionPtr GetSessionPtr() { return std::static_pointer_cast<Session>(shared_from_this()); }
+		std::shared_ptr<class ServerBase> GetServer() { return _ownerServer.lock(); }
 	private:
-
+		std::weak_ptr<class ServerBase> _ownerServer;
 		SRWLOCK _sendBufferLock;
 		SOCKET _socket;
 		NetAddress _targetNetAddr;
@@ -96,45 +91,43 @@ namespace C_Network
 		volatile char _sendFlag; // Use - 1, unUse - 0
 		volatile char _isDisconn;
 	public:
-	    volatile ULONG _ioCount;
-	public:
 		C_Utility::CRingBuffer _recvBuffer;
 		RecvEvent _recvEvent;
 		SendEvent _sendEvent;
-		ConnectEvent _connectEvent;
 
 	};
-
 
 	class SessionManager
 	{
 	public:
-		SessionManager(uint maxSessionCnt) : _sessionCnt(0), _maxSessionCnt(maxSessionCnt) { InitializeSRWLock(&_lock); _sessionToIdDic.reserve(maxSessionCnt); _idToSessionDic.reserve(maxSessionCnt); }
+		SessionManager(uint maxSessionCnt, SessionCreator creator) : _sessionCnt(0), _maxSessionCnt(maxSessionCnt), _createFunc(creator) { InitializeSRWLock(&_lock); _sessionToIdDic.reserve(maxSessionCnt); _idToSessionDic.reserve(maxSessionCnt); }
 		virtual ~SessionManager() = 0;
 
-		SharedSession CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle);
-		void DeleteSession(SharedSession session);
+		SessionPtr CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle, std::shared_ptr<ServerBase> owner);
+		void DeleteSession(SessionPtr session);
 
-		SharedSession GetSession(ULONGLONG sessionId);
+		SessionPtr GetSession(ULONGLONG sessionId);
 		uint GetSessionCnt() { return _sessionCnt; }
 
 	protected:
 		SRWLOCK _lock;
-		std::unordered_map<SharedSession, ULONGLONG> _sessionToIdDic; // Session -> sessionId
-		std::unordered_map<ULONGLONG, SharedSession> _idToSessionDic; // sessionId -> Session
+		std::unordered_map<SessionPtr, ULONGLONG> _sessionToIdDic; // Session -> sessionId
+		std::unordered_map<ULONGLONG, SessionPtr> _idToSessionDic; // sessionId -> Session
 		std::atomic<uint> _sessionCnt;
 		const uint _maxSessionCnt;
+
+		SessionCreator _createFunc;
 	};
 
 	class ServerSessionManager : public SessionManager
 	{
-	public: ServerSessionManager(uint maxSessionCnt) : SessionManager(maxSessionCnt) {}
+	public: ServerSessionManager(uint maxSessionCnt, SessionCreator creator) : SessionManager(maxSessionCnt, creator) {}
 		  ~ServerSessionManager() {}
 	};
 
 	class ClientSessionManager : public SessionManager
 	{
-	public: ClientSessionManager() : SessionManager(1) {}
+	public: ClientSessionManager(SessionCreator creator) : SessionManager(1, creator) {}
 		  ~ClientSessionManager() {}
 	};
 

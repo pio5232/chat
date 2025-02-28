@@ -21,11 +21,9 @@
   <ItemGroup>
     <ClInclude Include="BaseComponent.h" />
     <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="ChattingServer.h" />
     <ClInclude Include="CMonitor.h" />
     <ClInclude Include="CRingBuffer.h" />
     <ClInclude Include="CSerializationBuffer.h" />
-    <ClInclude Include="EchoServer.h" />
     <ClInclude Include="ErrorCode.h" />
     <ClInclude Include="GlobalInstance.h" />
     <ClInclude Include="GlobalQueue.h" />
@@ -37,17 +35,12 @@
     <ClInclude Include="Functor.h" />
     <ClInclude Include="LibsPch.h" />
     <ClInclude Include="MemoryPool.h" />
-    <ClInclude Include="NetworkErrorCode.h" />
     <ClInclude Include="NetworkUtils.h" />
     <ClInclude Include="PacketDefine.h" />
-    <ClInclude Include="ClientPacketHandler.h" />
-    <ClInclude Include="Room.h" />
-    <ClInclude Include="RoomManager.h" />
+    <ClInclude Include="PacketMaker.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="TLSInstance.h" />
     <ClInclude Include="TlsProfiler.h" />
-    <ClInclude Include="User.h" />
-    <ClInclude Include="UserManager.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -58,11 +51,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ChattingServer.cpp" />
     <ClCompile Include="CMonitor.cpp" />
     <ClCompile Include="CRingBuffer.cpp" />
     <ClCompile Include="CSerializationBuffer.cpp" />
-    <ClCompile Include="EchoServer.cpp" />
     <ClCompile Include="GlobalInstance.cpp" />
     <ClCompile Include="GlobalQueue.cpp" />
     <ClCompile Include="Job.cpp" />
@@ -107,10 +98,8 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">LibsPch.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="ClientPacketHandler.cpp" />
     <ClCompile Include="PacketDefine.cpp" />
-    <ClCompile Include="Room.cpp" />
-    <ClCompile Include="RoomManager.cpp" />
+    <ClCompile Include="PacketMaker.cpp" />
     <ClCompile Include="Session.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LibsPch.h</PrecompiledHeaderFile>
@@ -124,8 +113,6 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">LibsPch.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="User.cpp" />
-    <ClCompile Include="UserManager.cpp" />
     <ClCompile Include="Utils.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LibsPch.h</PrecompiledHeaderFile>

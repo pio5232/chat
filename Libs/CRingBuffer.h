@@ -1,12 +1,5 @@
 #pragma once
 
-//#ifndef RINGBUFFER_EXPORT
-//#define RINGBUFFER_DLLSPEC //__declspec(dllexport)
-//#else
-//#define RINGBUFFER_DLLSPEC //__declspec(dllimport)
-//#endif
-;
-
 namespace C_Utility
 {
 #define RINGBUFFER_DEFAULT_SIZE 10000

@@ -9,12 +9,12 @@ GlobalQueue::~GlobalQueue()
 {
 }
 
-void GlobalQueue::Push(SharedJobQueue sharedJobQueue)
+void GlobalQueue::Push(JobQueuePtr sharedJobQueue)
 {
 	_queue.Push(sharedJobQueue);
 }
 
-SharedJobQueue GlobalQueue::Pop()
+JobQueuePtr GlobalQueue::Pop()
 {
 	return _queue.Pop();
 }

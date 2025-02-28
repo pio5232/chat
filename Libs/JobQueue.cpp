@@ -2,7 +2,7 @@
 #include "JobQueue.h"
 #include "GlobalQueue.h"
 
-void C_Utility::JobQueue::Push(SharedJob job)
+void C_Utility::JobQueue::Push(JobPtr job)
 {
 	const uint16 prev = _jobCount.fetch_add(1);
 
@@ -28,7 +28,7 @@ void C_Utility::JobQueue::Execute()
 
 	while (true)
 	{
-		std::vector<SharedJob> jobVec;
+		std::vector<JobPtr> jobVec;
 		_jobQueue.PopAll(OUT jobVec);
 
 		const uint16 jobCount = jobVec.size();

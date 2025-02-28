@@ -20,6 +20,13 @@ C_Network::NetAddress::NetAddress(std::wstring ip, uint16 port)
 
 C_Network::NetAddress::NetAddress(const NetAddress& other) : _sockAddr(other._sockAddr) {}
 
+C_Network::NetAddress& C_Network::NetAddress::operator=(const SOCKADDR_IN& other)
+{
+	_sockAddr = other;
+
+	return *this;
+}
+
 void C_Network::NetAddress::Init(SOCKADDR_IN sockAddr)
 {
 	_sockAddr = sockAddr;
