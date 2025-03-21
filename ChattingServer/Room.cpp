@@ -178,7 +178,7 @@ void C_Network::Room::SetReady(LobbySessionPtr lobbySessionPtr, bool isReady, bo
 
 	ULONGLONG userId = lobbySessionPtr->_userId;
 
-	if (userId == _ownerId && _readyCnt == GetCurUserCnt())
+	if (userId == _ownerId && _readyCnt == GetCurUserCnt() && _roomState == RoomState::IDLE)
 	{
 		_roomState = RoomState::RUNNING;
 
@@ -189,9 +189,13 @@ void C_Network::Room::SetReady(LobbySessionPtr lobbySessionPtr, bool isReady, bo
 		SendToAll(sendBuffer);
 
 		std::wstring path(L"E:\\GameServer\\x64\\Debug\\GameServer.exe");
-		std::wstring args(std::to_wstring(_roomNumber) + L" " + std::to_wstring(GetCurUserCnt()) + L" " + std::to_wstring(GetMaxUserCnt()));
-		wprintf(L"path : %s    args : %s", path, args);
-		ExecuteProcess(path, args);
+
+		
+		//std::wstring args(std::to_wstring(_roomNumber) + L" " + std::to_wstring(GetCurUserCnt()) + L" " + std::to_wstring(GetMaxUserCnt()));
+		//wprintf(L"path : %s    args : %s", path, args);
+		ExecuteProcess(path);
+
+		RoomManager::GetInstance().PushRoomNum(_roomNumber);
 		return;
 	}
 

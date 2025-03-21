@@ -75,6 +75,12 @@
     <ClCompile Include="PacketMaker.cpp">
       <Filter>Network</Filter>
     </ClCompile>
+    <ClCompile Include="CTimer.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="CParser.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MemoryPool.h">
@@ -139,6 +145,12 @@
     </ClInclude>
     <ClInclude Include="PacketMaker.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="CTimer.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CParser.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

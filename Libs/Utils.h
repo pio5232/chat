@@ -12,20 +12,20 @@
 class SRWLockGuard
 {
 public:
-	SRWLockGuard(SRWLOCK* lock) : _lock(lock) { AcquireSRWLockExclusive(_lock); }
-	~SRWLockGuard() { ReleaseSRWLockExclusive(_lock); }
+	SRWLockGuard(SRWLOCK* lock) : _playerLock(lock) { AcquireSRWLockExclusive(_playerLock); }
+	~SRWLockGuard() { ReleaseSRWLockExclusive(_playerLock); }
 
-	SRWLOCK* _lock;
+	SRWLOCK* _playerLock;
 };
 
 class SRWSharedLockGuard
 {
 public:
-	SRWSharedLockGuard(SRWLOCK* lock) : _lock(lock) { AcquireSRWLockShared(_lock); }
-	~SRWSharedLockGuard() { ReleaseSRWLockShared(_lock); }
+	SRWSharedLockGuard(SRWLOCK* lock) : _playerLock(lock) { AcquireSRWLockShared(_playerLock); }
+	~SRWSharedLockGuard() { ReleaseSRWLockShared(_playerLock); }
 
 private:
-	SRWLOCK* _lock;
+	SRWLOCK* _playerLock;
 
 };
 
@@ -102,18 +102,18 @@ namespace C_Utility
 	public:
 		LockQueue()
 		{
-			InitializeSRWLock(&_lock);
+			InitializeSRWLock(&_playerLock);
 		}
 		void Push(T job)
 		{
-			SRWLockGuard lockGuard(&_lock);
+			SRWLockGuard lockGuard(&_playerLock);
 
 			_queue.push(job);
 		}
 
 		T Pop()
 		{
-			SRWLockGuard lockGuard(&_lock);
+			SRWLockGuard lockGuard(&_playerLock);
 			if (_queue.size() > 0)
 			{
 				T ret = _queue.front();
@@ -127,7 +127,7 @@ namespace C_Utility
 
 		void PopAll(OUT std::vector<T>& vec)
 		{
-			SRWLockGuard lockGuard(&_lock);
+			SRWLockGuard lockGuard(&_playerLock);
 
 			while (_queue.size() > 0)
 			{
@@ -140,30 +140,27 @@ namespace C_Utility
 
 		void Clear()
 		{
-			SRWLockGuard lockGuard(&_lock);
+			SRWLockGuard lockGuard(&_playerLock);
 			
 			_queue = std::queue<T>();
 			
 		}
 	private:
-		SRWLOCK _lock;
+		SRWLOCK _playerLock;
 		std::queue<T> _queue;
 	};
 }
 
-void ExecuteProcess(const std::wstring& path, const std::wstring& args);
+void ExecuteProcess(const std::wstring& path);// , const std::wstring& args);
 
 struct Vector3
 {
+
 	Vector3();
 	Vector3(float x, float y, float z);
-
-	static Vector3 Zero()
-	{
-		return Vector3();
-	}
 	Vector3(const Vector3& other)
 	{
+
 		x = other.x;
 		y = other.y;
 		z = other.z;
@@ -181,7 +178,73 @@ struct Vector3
 		return *this;
 	}
 
+	Vector3& operator+= (const Vector3& other)
+	{
+		if (this != &other)
+		{
+			x += other.x;
+			y += other.y;
+			z += other.z;
+		}
+
+		return *this;
+	}
+
+	Vector3 operator*(float f)
+	{
+		return Vector3(x * f, y * f, z * f);
+	}
+
+	static Vector3 Zero()
+	{
+		static const Vector3 zero(0, 0, 0);
+		return zero;
+	}
+
+	static Vector3 Left()
+	{
+		static const Vector3 left(-1.0f, 0, 0);
+		return left;
+	}
+	static Vector3 Right()
+	{
+		static const Vector3 right(1.0f, 0, 0);
+		return right;
+	}
+	static Vector3 Forward()
+	{
+		static const Vector3 forward(0, 0, 1.0f);
+		return forward;
+	}
+	static Vector3 Back()
+	{
+		static const Vector3 back(0, 0, -1.0f);
+		return back;
+	}
+	static float Distance(const Vector3& firstVec, const Vector3& secondVec);
+
+	float Magnitude()
+	{
+		int powCount = 2;
+
+		return sqrt(pow(x, powCount) + pow(y, powCount) + pow(z, powCount));
+	}
+
+	Vector3 Normalize()
+	{
+		float magnitude = Magnitude();
+
+		if(magnitude > 1E-05f)
+			return Vector3(x / magnitude, y / magnitude, z / magnitude);
+		
+		return Zero();
+	}
+
+
 	float x;
 	float y;
 	float z;
 };
+
+double GetRandDouble(double min, double max, int roundPlaceValue = 1);
+int GetRand(int min, int max);

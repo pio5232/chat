@@ -14,9 +14,12 @@ namespace C_Network
 		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo);
 		virtual void OnError(int errCode, WCHAR* cause);
 
-#ifdef LAN
-		std::unique_ptr<LanServer> _lanServer;
-#endif // LAN
+	private:
 
+		void CheckHeartbeat();
+		volatile bool _canCheckHeartbeat;
+
+		std::shared_ptr<class LanServer> _lanServer;
+		std::thread _heartbeatCheckThread;
 	};
 }

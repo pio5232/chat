@@ -34,12 +34,6 @@ _targetNetAddr(), _sendFlag(0), _recvBuffer()
 
 C_Network::Session::~Session()
 {
-	if (_socket != INVALID_SOCKET)
-	{
-		printf("Session 종료");
-		closesocket(_socket);
-		_socket = INVALID_SOCKET;
-	}
 }
 
 void C_Network::Session::Init(SOCKET sock, const SOCKADDR_IN* pSockAddr, std::weak_ptr<C_Network::ServerBase> owner)
@@ -47,6 +41,7 @@ void C_Network::Session::Init(SOCKET sock, const SOCKADDR_IN* pSockAddr, std::we
 	_socket = sock;
 	_targetNetAddr = *pSockAddr;
 	_ownerServer = owner;
+	_lastTimeStamp = GetTimeStamp();
 }
 
 void C_Network::Session::Send(SharedSendBuffer sendBuf)
@@ -311,16 +306,47 @@ void C_Network::Session::Disconnect()
 		
 		OnDisconnected();
 
+		std::shared_ptr<ServerBase> serverPtr = GetServer();
+		
+		if(serverPtr != nullptr)
 		GetServer()->DeleteSession(GetSessionPtr());
+
+		if (_socket != INVALID_SOCKET)
+		{
+			printf("Session 종료\n");
+			closesocket(_socket);
+			_socket = INVALID_SOCKET;
+		}
+	}
+}
+
+std::shared_ptr<C_Network::ServerBase> C_Network::Session::GetServer()
+{
+	if (_ownerServer.expired())
+		return nullptr;
+
+	return _ownerServer.lock();
+}
+
+void C_Network::Session::UpdateHeartbeat(ULONGLONG now)
+{
+	if (now > _lastTimeStamp)
+		_lastTimeStamp = now;
+}
+
+void C_Network::Session::CheckHeartbeatTimeout(ULONGLONG now)
+{
+	if (now - _lastTimeStamp > HEARTBEAT_TIMEOUT)
+	{
+		printf("[Timeout] Session ID: %llu\n", _sessionId); 
+
+		Disconnect();
 	}
 }
 
 
 
 // -----------------------------------------------------------------------------------------------------------------------
-
-
-
 SessionPtr C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle, std::shared_ptr<C_Network::ServerBase> owner)
 {
 	if (_sessionCnt == _maxSessionCnt)
@@ -349,47 +375,56 @@ SessionPtr C_Network::SessionManager::CreateSession(SOCKET sock, SOCKADDR_IN* pS
 	{
 		SRWLockGuard lockGuard(&_lock);
 		
-		_sessionToIdDic.insert(std::make_pair(newSession, id));
-		_idToSessionDic.insert(std::make_pair(id, newSession));
+		_sessionSet.insert(newSession);
 	}
 
 
 	return newSession;
 } 
 
-void C_Network::SessionManager::DeleteSession(SessionPtr session)
+void C_Network::SessionManager::DeleteSession(SessionPtr sessionPtr)
 {
-	ULONGLONG sessionId = session->GetSessionId();
+	SRWLockGuard lockGuard(&_lock);
+	
+	_sessionSet.erase(sessionPtr);
+	
+	_sessionCnt.fetch_sub(1);
+}
 
+void C_Network::SessionManager::SetMaxCount(uint maxSessionCnt)
+{
+	if (_maxSessionCnt == 0)
+		_maxSessionCnt = maxSessionCnt;
+}
+
+void C_Network::SessionManager::CheckHeartbeatTimeOut(ULONGLONG now)
+{
+	int sessionCnt = _sessionCnt;
+
+	if (sessionCnt == 0)
+		return;
+
+	std::vector<SessionPtr> tempSessions;
+	tempSessions.reserve(sessionCnt);
 	{
 		SRWLockGuard lockGuard(&_lock);
-		_sessionToIdDic.erase(session);
-		_idToSessionDic.erase(sessionId);
+
+		for (SessionPtr sessionPtr : _sessionSet)
+		{
+			tempSessions.push_back(sessionPtr);
+		}
 	}
-	_sessionCnt.fetch_sub(1);
+
+	for (SessionPtr& sessionPtr : tempSessions)
+	{
+		sessionPtr->CheckHeartbeatTimeout(now);
+	}
 }
 
 C_Network::SessionManager::~SessionManager()
 {
 	SRWLockGuard lockGuard(&_lock);
 	
-	for (auto iter = _sessionToIdDic.begin(); iter != _sessionToIdDic.end(); )
-	{
-		_idToSessionDic.erase(iter->second);
-		iter = _sessionToIdDic.erase(iter);
-	}
+	_sessionSet.clear();
 }
 
-SessionPtr C_Network::SessionManager::GetSession(ULONGLONG sessionId)
-{
-	SRWSharedLockGuard lockGuard(&_lock);
-
-	std::unordered_map<ULONGLONG, SessionPtr>::iterator iter = _idToSessionDic.find(sessionId);
-
-	if (iter != _idToSessionDic.end())
-		return iter->second;
-	else
-		return nullptr;
-
-	
-}

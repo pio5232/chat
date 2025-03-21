@@ -22,8 +22,10 @@
     <ClInclude Include="BaseComponent.h" />
     <ClInclude Include="CCrashDump.h" />
     <ClInclude Include="CMonitor.h" />
+    <ClInclude Include="CParser.h" />
     <ClInclude Include="CRingBuffer.h" />
     <ClInclude Include="CSerializationBuffer.h" />
+    <ClInclude Include="CTimer.h" />
     <ClInclude Include="ErrorCode.h" />
     <ClInclude Include="GlobalInstance.h" />
     <ClInclude Include="GlobalQueue.h" />
@@ -52,8 +54,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="CMonitor.cpp" />
+    <ClCompile Include="CParser.cpp" />
     <ClCompile Include="CRingBuffer.cpp" />
     <ClCompile Include="CSerializationBuffer.cpp" />
+    <ClCompile Include="CTimer.cpp" />
     <ClCompile Include="GlobalInstance.cpp" />
     <ClCompile Include="GlobalQueue.cpp" />
     <ClCompile Include="Job.cpp" />

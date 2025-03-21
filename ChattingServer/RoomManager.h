@@ -9,7 +9,7 @@ namespace C_Network
 	class RoomManager
 	{
 	private:
-		RoomManager() : _maxRoomCnt(0), _maxRoomUserCnt(0) { InitializeSRWLock(&_lock); }
+		RoomManager() : _maxRoomCnt(0), _maxRoomUserCnt(0) { InitializeSRWLock(&_lock); InitializeSRWLock(&_queueLock); }
 	public:
 		static RoomManager& GetInstance()
 		{
@@ -18,6 +18,8 @@ namespace C_Network
 			return instance;
 		}
 
+		RoomManager(const RoomManager&) = delete;
+		RoomManager& operator =(const RoomManager&) = delete;
 		static void Init(uint16 maxRoomCount, uint16 maxRoomUserCnt);
 		
 		~RoomManager();
@@ -51,6 +53,9 @@ namespace C_Network
 			}
 		}
 
+		void PushRoomNum(uint16 roomNum);
+		uint16 PopRoomNum();
+
 	private:
 		uint16 _maxRoomCnt;
 		uint16 _maxRoomUserCnt; // room당 최대 user 수
@@ -58,5 +63,8 @@ namespace C_Network
 
 		std::unordered_map<uint16, RoomPtr> _roomMap; // [roomNum, roomPtr]
 		SRWLOCK _lock;
+	private:
+		SRWLOCK _queueLock;
+		std::queue<uint16> _queue;
 	};
 }

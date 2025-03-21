@@ -137,7 +137,6 @@ void C_Network::ServerBase::Dispatch(C_Network::IocpEvent* iocpEvent, DWORD tran
 {
 	SessionPtr session = iocpEvent->_owner;
 
-	// 상호 참조 ( 이 경우는 순환 참조가 발생할 수 있어 NetworkBase에서 Session을 가지는 형태로 사용한다. )
 	switch (iocpEvent->_type)
 	{
 	case IocpEventType::Recv:
@@ -241,15 +240,6 @@ void C_Network::ServerBase::OnError(int errCode, WCHAR* cause)
 }
 
 
-void C_Network::ServerBase::Send(ULONGLONG sessionId, C_Network::SharedSendBuffer buffer)
-{
-	SessionPtr session = _sessionMgr->GetSession(sessionId);
-
-	if (session == nullptr)
-		return;
-	
-	session->Send(buffer);
-}
 
 void C_Network::ServerBase::AcceptThread()
 {
@@ -268,12 +258,191 @@ void C_Network::ServerBase::AcceptThread()
 		{
 		}
 
-
 		SessionPtr newSession = _sessionMgr->CreateSession(clientSock, &clientInfo, _iocpHandle, shared_from_this());
 				
 		if (nullptr == newSession)
+		{
+			printf("session is Null");
 			continue;
-
+		}
 		newSession->ProcessConnect();
 	}
+}
+
+// ----------------- ClientBase ----------------------
+
+C_Network::ClientBase::ClientBase(const NetAddress& targetNetAddr, C_Network::SessionCreator createFunc) : _iocpHandle(nullptr), _clientSession(nullptr),
+_targetNetAddr(targetNetAddr)
+{
+	WSAData wsa;
+
+	int iRet = WSAStartup(MAKEWORD(2, 2), &wsa);
+
+	if (iRet)
+	{
+		printf("[WSAStartUp Error !!]\n");
+		return;
+	}
+
+	SYSTEM_INFO sys;
+	GetSystemInfo(&sys);
+
+	uint concurrentThreadCnt = 1;
+
+	_iocpHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, concurrentThreadCnt);
+
+	if (_iocpHandle == NULL)
+	{
+		printf("[Create IOCP Handle is Failed!!]\n");
+		return;
+	}
+
+
+	_workerThread = std::thread([this]() {this->WorkerThread(); });
+
+	SOCKET clientSock = socket(AF_INET, SOCK_STREAM, 0);
+	if (clientSock == INVALID_SOCKET)
+	{
+		printf("ClientSocket is INVALID\n");
+		return;
+	}
+
+	_clientSession = createFunc();
+	_clientSession->Init(clientSock, &_targetNetAddr.GetSockAddr());
+
+	LINGER linger;
+	linger.l_linger = 0;
+	linger.l_onoff = 0;
+
+	DWORD setLingerRet = setsockopt(_clientSession->GetSock(), SOL_SOCKET, SO_LINGER, (char*)&linger, sizeof(linger));
+	if (setLingerRet == SOCKET_ERROR)
+	{
+		printf("Set Linger Failed GetLastError : %d", GetLastError());
+
+		return;
+	}
+}
+
+C_Network::ClientBase::~ClientBase()
+{
+	if(_iocpHandle != nullptr)
+	CloseHandle(_iocpHandle);
+
+	if (_workerThread.joinable())
+		_workerThread.join();
+
+	WSACleanup();
+}
+
+bool C_Network::ClientBase::Connect()
+{
+	if (_clientSession->GetSock() == INVALID_SOCKET)
+	{
+		printf("[Socket is Invalid]");
+		return false;
+	}
+
+	int connectRet = connect(_clientSession->GetSock(), (sockaddr*)&_targetNetAddr.GetSockAddr(), sizeof(SOCKADDR_IN));
+
+	if (connectRet == SOCKET_ERROR)
+	{
+		printf("[Client Connect Error - %d", GetLastError());;
+		return false;
+	}
+
+	HANDLE RegistIocpRet = CreateIoCompletionPort((HANDLE)_clientSession->GetSock(), _iocpHandle, NULL, NULL);
+
+	if (nullptr == RegistIocpRet)
+	{
+		printf("[Regist Session Handle Failed]\n");
+		return false;
+	}
+
+	_clientSession->ProcessConnect();
+
+	return true;
+}
+
+
+bool C_Network::ClientBase::Disconnect()
+{
+	_clientSession->Disconnect();
+
+	return false;
+}
+
+void C_Network::ClientBase::Send(C_Network::SharedSendBuffer buffer)
+{
+	if (!_clientSession)
+	{
+		printf("[Send Error - ClientSession is null !!!!!]");
+		return;
+	}
+	_clientSession->Send(buffer);
+}
+
+bool C_Network::ClientBase::ProcessIO(DWORD timeOut)
+{
+	IocpEvent* iocpEvent;
+	DWORD transferredBytes;
+	ULONG_PTR key;
+	// Session*를 Key로 등록해서 가지는 형태도 사용할 수 있지만.
+	// 현재 작업 (IocpEvent)에 자신의 소유자 (Session*)가 등록되어 있기 때문에 Key는 사용하지 않는다.
+
+	iocpEvent = nullptr;
+	transferredBytes = 0;
+
+	key = 0;
+
+	bool gqcsRet = GetQueuedCompletionStatus(_iocpHandle, &transferredBytes,
+		&key, reinterpret_cast<LPOVERLAPPED*>(&iocpEvent), timeOut);
+
+	if (!iocpEvent)
+	{
+		DWORD wsaErr = WSAGetLastError();
+
+		printf("IocpEvent is NULL\n");
+		if (wsaErr == WSA_WAIT_TIMEOUT)
+			return true;
+
+		PostQueuedCompletionStatus(_iocpHandle, 0, 0, nullptr);
+		return false;
+	}
+
+	Dispatch(iocpEvent, transferredBytes);
+
+	return true;
+}
+
+
+void C_Network::ClientBase::Dispatch(IocpEvent* iocpEvent, DWORD transferredBytes)
+{
+	SessionPtr sessionPtr = iocpEvent->_owner;
+	switch (iocpEvent->_type)
+	{
+	case IocpEventType::Recv:
+	{
+		sessionPtr->ProcessRecv(transferredBytes);
+
+		break;
+	}
+
+	case IocpEventType::Send:
+	{
+		sessionPtr->ProcessSend(transferredBytes);
+
+		break;
+	}
+	default:break;
+	}
+}
+
+void C_Network::ClientBase::WorkerThread()
+{
+	while (1)
+	{
+		if (false == ProcessIO())
+			break;
+	}
+
 }

@@ -12,6 +12,7 @@ namespace C_Network
 	{
 		JOB_PROC_TICK = 64,
 	};
+
 	/*-----------------------
 			ServerBase
 	-----------------------*/ 
@@ -28,7 +29,6 @@ namespace C_Network
 		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo);
 		virtual void OnError(int errCode, WCHAR* cause);
 
-		void Send(ULONGLONG sessionId, C_Network::SharedSendBuffer buffer);
 		const NetAddress GetNetAddr() const { return _targetNetAddr; }
 
 		void DeleteSession(SessionPtr session) { _sessionMgr->DeleteSession(session); }
@@ -60,6 +60,32 @@ namespace C_Network
 		std::thread _acceptThread;
 		// NetServer -> listen EndPoint
 		// NetClient -> dest EndPoint
+	};
+
+	class ClientBase
+	{
+	public:
+		ClientBase(const NetAddress& targetNetAddr, C_Network::SessionCreator createFunc);
+		virtual ~ClientBase() = 0;
+
+		bool Connect();
+		bool Disconnect();
+
+		void Send(C_Network::SharedSendBuffer buffer);
+
+		bool ProcessIO(DWORD timeOut = INFINITE);
+
+	private:
+		void Dispatch(IocpEvent* iocpEvent, DWORD transferredBytes);
+		void WorkerThread();
+
+	private:
+		SessionPtr _clientSession; // Client의 session은 ClientBase 인스턴스가 사라질 때 사라짐.
+
+		const NetAddress _targetNetAddr;
+
+		HANDLE _iocpHandle;
+		std::thread _workerThread;
 	};
 
 	

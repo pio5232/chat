@@ -21,6 +21,7 @@
 #include "NetworkUtils.h"
 
 #include "JobQueue.h"
+#include "CTimer.h"
 //extern thread_local C_Network::SharedSendBufChunk sendBufChunks;
 
 #include "ErrorCode.h"

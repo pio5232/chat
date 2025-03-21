@@ -34,11 +34,12 @@ enum class ErrorCode : uint16
 	ALLOC_FAILED,	// malloc, new 등 메모리 할당 실패
 
 	DUPLICATED_MEMBER, // Dic에 등록하려고 했는데 이미 무엇인가가 등록이 되어 있음.
-	
 	ACCESS_DELETE_MEMBER, // 삭제된 멤버에 접근.
 
-	POST_UI_UPDATE_FAILED, // UITaskManager에 postMessage가 실패했다.
 
+	POST_UI_UPDATE_FAILED, // UITaskManager에 postMessage가 실패했다.
+	SERVER_IS_NOT_EXIST, // GAME_SERVER가 존재하지 않음.
+	GAME_SERVER_IS_RUNNING, // 게임 서버 시작 요청을 했지만. 이미 실행 중인 상태 ( 요청의 중복 체크 )
 	// [ 60000 ~ ETC / COMMON]
 	NOT_FOUND = 60000, // 멤버가 없음.
 	CANNOT_FIND_PACKET_FUNC, // PacketHandler에 해당 패킷을 처리할 수 있는 함수가 등록되지 않음.

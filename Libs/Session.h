@@ -5,6 +5,7 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 
 namespace C_Network
 {
@@ -50,15 +51,16 @@ namespace C_Network
 	/*------------------------------
 				Session 
 	------------------------------*/
+
 	struct Session : public std::enable_shared_from_this<Session>
 	{
 	public:
 		Session();
 		~Session();
 
-		void Init(SOCKET sock, const SOCKADDR_IN* pSockAddr, std::weak_ptr<class ServerBase> owner);
+		void Init(SOCKET sock, const SOCKADDR_IN* pSockAddr, std::weak_ptr<class ServerBase> owner = std::weak_ptr<class ServerBase>());
 		void Send(SharedSendBuffer sendBuf);
-
+	
 		bool ProcessConnect();
 
 		const NetAddress& GetNetAddr() const { return _targetNetAddr; }
@@ -78,7 +80,11 @@ namespace C_Network
 		virtual void OnRecv(C_Utility::CSerializationBuffer& buffer, uint16 type) = 0;
 
 		SessionPtr GetSessionPtr() { return std::static_pointer_cast<Session>(shared_from_this()); }
-		std::shared_ptr<class ServerBase> GetServer() { return _ownerServer.lock(); }
+		std::shared_ptr<class ServerBase> GetServer();
+
+		void UpdateHeartbeat(ULONGLONG now);
+
+		void CheckHeartbeatTimeout(ULONGLONG now);
 	private:
 		std::weak_ptr<class ServerBase> _ownerServer;
 		SRWLOCK _sendBufferLock;
@@ -90,6 +96,8 @@ namespace C_Network
 
 		volatile char _sendFlag; // Use - 1, unUse - 0
 		volatile char _isDisconn;
+		
+		ULONGLONG _lastTimeStamp;
 	public:
 		C_Utility::CRingBuffer _recvBuffer;
 		RecvEvent _recvEvent;
@@ -100,21 +108,23 @@ namespace C_Network
 	class SessionManager
 	{
 	public:
-		SessionManager(uint maxSessionCnt, SessionCreator creator) : _sessionCnt(0), _maxSessionCnt(maxSessionCnt), _createFunc(creator) { InitializeSRWLock(&_lock); _sessionToIdDic.reserve(maxSessionCnt); _idToSessionDic.reserve(maxSessionCnt); }
+		SessionManager(uint maxSessionCnt, SessionCreator creator) : _sessionCnt(0), _maxSessionCnt(maxSessionCnt), _createFunc(creator) { InitializeSRWLock(&_lock); }
 		virtual ~SessionManager() = 0;
 
 		SessionPtr CreateSession(SOCKET sock, SOCKADDR_IN* pSockAddr, HANDLE iocpHandle, std::shared_ptr<ServerBase> owner);
 		void DeleteSession(SessionPtr session);
 
-		SessionPtr GetSession(ULONGLONG sessionId);
 		uint GetSessionCnt() { return _sessionCnt; }
+		void SetMaxCount(uint maxSessionCnt);
+
+		void CheckHeartbeatTimeOut(ULONGLONG now);
 
 	protected:
 		SRWLOCK _lock;
-		std::unordered_map<SessionPtr, ULONGLONG> _sessionToIdDic; // Session -> sessionId
-		std::unordered_map<ULONGLONG, SessionPtr> _idToSessionDic; // sessionId -> Session
+		std::set<SessionPtr> _sessionSet;
+
 		std::atomic<uint> _sessionCnt;
-		const uint _maxSessionCnt;
+		uint _maxSessionCnt;
 
 		SessionCreator _createFunc;
 	};

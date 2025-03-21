@@ -11,12 +11,14 @@ enum class ComponentType
 class BaseComponent
 {
 public:
-	BaseComponent(ULONGLONG userId, ComponentType componentType);
+	BaseComponent(ComponentType componentType);
 	virtual ~BaseComponent();
 
+	virtual void Update(float delta) = 0;
+	ComponentType GetType() const { return _componentType; }
 private:
-	ULONGLONG _userId = 0;
 	ComponentType _componentType = ComponentType::NONE;
+	//ULONGLONG _userId = 0;
 
 };
 

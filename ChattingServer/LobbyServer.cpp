@@ -2,52 +2,40 @@
 #include "LobbyServer.h"
 #include "LobbyMonitor.h"
 #include "PacketHandler.h"
-C_Network::LobbyServer::LobbyServer(const NetAddress& netAddr, uint maxSessionCnt, SessionCreator creator) : ServerBase(netAddr, maxSessionCnt, creator)
+#include "LanServer.h"
+#include "LanSession.h"
+
+C_Network::LobbyServer::LobbyServer(const NetAddress& netAddr, uint maxSessionCnt, SessionCreator creator) : ServerBase(netAddr, maxSessionCnt, creator), _canCheckHeartbeat(true)
 {
-	const uint roomCnt = 20;
-
-	uint maxRoomUserCnt = maxSessionCnt / roomCnt;
-	if (maxSessionCnt % roomCnt != 0)
-		++maxRoomUserCnt;
-
 	C_Network::LobbyClientPacketHandler::Init();
 
 	_monitor = std::make_unique<C_Utility::LobbyMonitor>(_sessionMgr.get());
 
 
-#ifdef LAN
+	_lanServer = std::make_shared<LanServer>(NetAddress(netAddr.GetIpAddress(), LanServerPort), 10,
+			[]() { return std::static_pointer_cast<Session>(std::make_shared<LanSession>()); });
 
-
-	_lanServer = std::make_unique<C_Network::LanServer>(NetAddress(netAddr.GetIpAddress(), LanServerPort), 10);
-
-	if (_userMgr == nullptr || _roomMgr == nullptr || _monitor == nullptr || _lanServer == nullptr)
+	if (_lanServer == nullptr)
 	{
-		printf("ChattingServer Initializing Failed\n");
+		printf("LanServer is nullptr\n");
+		//
 		return;
 	}
 
-	_lanServer->RegistCallback([this](C_Network::SharedSendBuffer buffer, uint16 roomNum, NetCallbackType callbackType)
-		{
-			if (roomNum == 0)
-			{
-				SendToAllUser(buffer, callbackType);
-			}
-			else
-			{
-				SendToRoom(buffer, roomNum, callbackType);
-			}
-		});
 	_lanServer->Begin(true);
-#endif //  
+
+	_heartbeatCheckThread = std::thread([this]() {this->CheckHeartbeat(); });
 
 }
 
 C_Network::LobbyServer::~LobbyServer()
 {
-#ifdef LAN
-	_lanServer->End();
-#endif // LAN
+	_canCheckHeartbeat = false;
 
+	if (_heartbeatCheckThread.joinable())
+		_heartbeatCheckThread.join();
+
+	_lanServer->End();
 }
 
 bool C_Network::LobbyServer::OnConnectionRequest(const SOCKADDR_IN& clientInfo)
@@ -57,6 +45,20 @@ bool C_Network::LobbyServer::OnConnectionRequest(const SOCKADDR_IN& clientInfo)
 
 void C_Network::LobbyServer::OnError(int errCode, WCHAR* cause)
 {
+}
+
+void C_Network::LobbyServer::CheckHeartbeat()
+{
+	printf("[ Check Heartbeat Start ]\n");
+	while (_canCheckHeartbeat)
+	{
+		ULONGLONG now = C_Utility::GetTimeStamp();
+
+		_sessionMgr->CheckHeartbeatTimeOut(now);
+
+		Sleep(3000);
+	}
+	printf("[ Check Heartbeat End ]\n");
 }
 
 //C_Network::NetworkErrorCode C_Network::LobbyServer::SendToRoom(C_Network::SharedSendBuffer buffer, uint16 roomNum, NetCallbackType callbackType)

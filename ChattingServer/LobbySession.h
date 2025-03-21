@@ -11,7 +11,7 @@ namespace C_Network
 		}
 
 		void SetRoom(std::weak_ptr<Room> room) { _curRoom = room; }
-		std::weak_ptr<Room> GetRoom() { return _curRoom; }
+		std::weak_ptr<Room> GetRoom() const { return _curRoom; }
 
 		virtual void OnConnected() override;
 		virtual void OnDisconnected() override;
@@ -22,4 +22,4 @@ namespace C_Network
 	private:
 		std::weak_ptr<Room> _curRoom;
 	};
-}
+}	

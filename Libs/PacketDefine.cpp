@@ -2,9 +2,17 @@
 #include "PacketDefine.h"
 #include "CSerializationBuffer.h"
 
-serializationBuffer& operator<<(serializationBuffer& serialBuffer, Vector3 vector)
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, Vector3& vector)
 {
 	serialBuffer << vector.x << vector.y << vector.z;
+
+	return serialBuffer;
+}
+
+
+serializationBuffer& operator>>(serializationBuffer& serialBuffer, Vector3& vector)
+{
+	serialBuffer >> vector.x >> vector.y >> vector.z;
 
 	return serialBuffer;
 }

@@ -54,7 +54,7 @@ public:
 		ChattingServer(const NetAddress& netAddr, uint maxSessionCnt, SessionCreator creator) : ServerBase(netAddr, maxSessionCnt, creator) {}
 		~ChattingServer() {}
 
-		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo) { return true; }
+		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo) { return true;  }
 		virtual void OnError(int errCode, WCHAR* cause) {}
 
 #ifdef LAN
@@ -68,7 +68,7 @@ public:
 int main()
 {
 	// 파일 읽어서 세팅
-	RoomManager::GetInstance().Init(100,300);
+	RoomManager::GetInstance().Init(100,100);
 
 	//std::shared_ptr<ChattingServer> server = std::make_shared<ChattingServer>(NetAddress(std::wstring(L"127.0.0.1"), ServerPort), 9000, []() { return std::static_pointer_cast<Session>(std::make_shared<EchoSession>()); });
 	std::shared_ptr<LobbyServer> server = std::make_shared<LobbyServer>(NetAddress(std::wstring(L"127.0.0.1"), ServerPort), 6000,

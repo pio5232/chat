@@ -32,6 +32,8 @@
       <Filter>Contents</Filter>
     </ClCompile>
     <ClCompile Include="LobbyMonitor.cpp" />
+    <ClCompile Include="LanServer.cpp" />
+    <ClCompile Include="LanSession.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -54,5 +56,7 @@
       <Filter>Contents</Filter>
     </ClInclude>
     <ClInclude Include="LobbyMonitor.h" />
+    <ClInclude Include="LanServer.h" />
+    <ClInclude Include="LanSession.h" />
   </ItemGroup>
 </Project>

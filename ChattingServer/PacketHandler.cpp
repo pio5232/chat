@@ -4,11 +4,13 @@
 #include "PacketHandler.h"
 #include "PacketMaker.h"
 #include "RoomManager.h"
+#include "LanSession.h"
 /*---------------------------------------
 			LobbyClientPacketHandler
 ---------------------------------------*/
 
 std::unordered_map<uint16, C_Network::LobbyClientPacketHandler::PacketFunc> C_Network::LobbyClientPacketHandler::_packetFuncsDic;
+std::unordered_map<uint16, C_Network::LanClientPacketHandler::PacketFunc> C_Network::LanClientPacketHandler::_packetFuncsDic;
 
 void C_Network::LobbyClientPacketHandler::Init()
 {
@@ -26,6 +28,8 @@ void C_Network::LobbyClientPacketHandler::Init()
 	_packetFuncsDic[LEAVE_ROOM_REQUEST_PACKET] = ProcessLeaveRoomRequestPacket;
 
 	_packetFuncsDic[GAME_READY_REQUEST_PACKET] = ProcessGameReadyRequestPacket;
+
+	_packetFuncsDic[HEART_BEAT_PACKET] = ProcessHeartbeatPacket;
 
 }
 
@@ -205,7 +209,18 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessGameReadyRequestPacket(Lob
 	RoomPtr sharedRoom = room.lock();
 
 	sharedRoom->DoAsync(&Room::SetReady, lobbySessionPtr, requestPacket.isReady, true);
+}
 
+ErrorCode C_Network::LobbyClientPacketHandler::ProcessHeartbeatPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer)
+{
+	ULONGLONG packetTimeStamp;
+
+	buffer >> packetTimeStamp;
+	printf("SessionId : %llu, [comTimeStamp : %llu], [PacketTimeStamp : %llu]\n", lobbySessionPtr->GetSessionId(), C_Utility::GetTimeStamp(), packetTimeStamp);
+	
+	lobbySessionPtr->UpdateHeartbeat(packetTimeStamp);
+
+	return ErrorCode::NONE;
 }
 
 
@@ -213,7 +228,6 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessRoomListRequestPacket(Lobb
 {
 	std::cout << "RoomList Request\n";
 
-	// AA
 	ErrorCode errCode = RoomManager::GetInstance().SendToUserRoomInfo(lobbySessionPtr);
 
 	return errCode;
@@ -260,7 +274,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessLogInPacket(LobbySessionPt
 
 //ErrorCode C_Network::LanClientPacketHandler::ProcessLanInfoNotifyPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer)
 //{
-//	C_Network::GameServerInfoNotifyPacket packet;
+//	C_Network::GameServerLanInfoPacket packet;
 //
 //	buffer.GetData(reinterpret_cast<char*>(&packet.ipStr[0]), sizeof(packet.ipStr));
 //
@@ -287,3 +301,78 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessLogInPacket(LobbySessionPt
 //
 //	return ErrorCode::NONE;
 //}
+
+void C_Network::LanClientPacketHandler::Init()
+{
+	_packetFuncsDic.clear();
+
+	_packetFuncsDic[GAME_SERVER_LAN_INFO_PACKET] = ProcessLanInfoNotifyPacket; // ip Port
+	_packetFuncsDic[GAME_SERVER_SETTING_REQUEST_PACKET] = ProcessGameSettingRequestPacket; // completePacket
+
+}
+
+ErrorCode C_Network::LanClientPacketHandler::ProcessLanInfoNotifyPacket(LanSessionPtr& lanSessionPtr, C_Utility::CSerializationBuffer& buffer)
+{
+	printf("Lan Info Notify Packet Recv\n");
+	C_Network::GameServerLanInfoPacket lanInfoPacket;
+	
+	buffer.GetData(reinterpret_cast<char*>(&lanInfoPacket.ipStr[0]), sizeof(lanInfoPacket.ipStr));
+
+	buffer >> lanInfoPacket.port >> lanInfoPacket.roomNum >> lanInfoPacket.xorToken;
+
+	wprintf(L"size : [ %d ]\n", lanInfoPacket.size);
+	wprintf(L"type : [ %d ]\n", lanInfoPacket.type);
+	wprintf(L"ip: [ %s ]\n", lanInfoPacket.ipStr);
+	wprintf(L"port : [ %d ]\n", lanInfoPacket.port);
+	wprintf(L"Room : [ %d ]\n", lanInfoPacket.roomNum);
+	wprintf(L"xorToken : [ %llu ], After : [%llu]\n", lanInfoPacket.xorToken, lanInfoPacket.xorToken ^ xorTokenKey);
+
+	C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(lanInfoPacket));
+
+	*sendBuffer << lanInfoPacket.size << lanInfoPacket.type;
+
+	sendBuffer->PutData(reinterpret_cast<const char*>(lanInfoPacket.ipStr), IP_STRING_LEN * sizeof(WCHAR));
+
+	*sendBuffer << lanInfoPacket.port << lanInfoPacket.roomNum << lanInfoPacket.xorToken;
+
+	RoomPtr roomPtr = C_Network::RoomManager::GetInstance().GetRoom(lanInfoPacket.roomNum);
+
+	if (roomPtr == nullptr)
+	{
+		// LOG
+		return ErrorCode::ACCESS_DESTROYED_ROOM;
+	}
+
+	roomPtr->SendToAll(sendBuffer);
+
+	return ErrorCode::NONE;
+}
+
+ErrorCode C_Network::LanClientPacketHandler::ProcessGameSettingRequestPacket(LanSessionPtr& lanSessionPtr, C_Utility::CSerializationBuffer& buffer)
+{
+	printf("Game Setting Request Packet Recv\n");
+	uint16 roomNum = C_Network::RoomManager::GetInstance().PopRoomNum();
+	
+	RoomPtr roomPtr = C_Network::RoomManager::GetInstance().GetRoom(roomNum);
+
+	if (roomPtr == nullptr)
+	{
+		// LOG
+		printf("GameSetting.. Room is Invalid\n");
+		return ErrorCode::ACCESS_DESTROYED_ROOM;
+	}
+
+	C_Network::GameServerSettingResponsePacket settingResponsePacket;
+
+	settingResponsePacket.roomNum = roomNum;
+	settingResponsePacket.requiredUsers = roomPtr->GetCurUserCnt();
+	settingResponsePacket.maxUsers = roomPtr->GetMaxUserCnt();
+	
+	SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(settingResponsePacket));
+
+	*sendBuffer << settingResponsePacket.size << settingResponsePacket.type << settingResponsePacket.roomNum << settingResponsePacket.requiredUsers << settingResponsePacket.maxUsers;
+	
+	lanSessionPtr->Send(sendBuffer);
+
+	return ErrorCode::NONE;
+}

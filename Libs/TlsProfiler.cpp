@@ -155,7 +155,7 @@ void C_Utility::TlsProfileSample::ContainAttributes(std::vector<std::wstring>& a
 
 C_Utility::TlsProfileManager::TlsProfileManager()
 {
-	InitializeSRWLock(&_lock);
+	InitializeSRWLock(&_playerLock);
 	ProfileBoss::GetInstance().RegistManager(this);
 }
 
@@ -177,7 +177,7 @@ TlsProfileSample* C_Utility::TlsProfileManager::GetSample(const WCHAR* tag)
 
 bool C_Utility::TlsProfileManager::ReleaseAll()
 {
-	SRWLockGuard lockGuard(&_lock);
+	SRWLockGuard lockGuard(&_playerLock);
 
 	for (auto iter = _sampleMappingTable.begin(); iter != _sampleMappingTable.end(); )
 	{
@@ -190,7 +190,7 @@ bool C_Utility::TlsProfileManager::ReleaseAll()
 
 void C_Utility::TlsProfileManager::Begin(const WCHAR* tag)
 {
-	SRWLockGuard lockGuard(&_lock);
+	SRWLockGuard lockGuard(&_playerLock);
 	TlsProfileSample* sample = GetSample(tag);
 
 	sample->Begin();
@@ -198,7 +198,7 @@ void C_Utility::TlsProfileManager::Begin(const WCHAR* tag)
 
 void C_Utility::TlsProfileManager::End(const WCHAR* tag)
 {
-	SRWLockGuard lockGuard(&_lock);
+	SRWLockGuard lockGuard(&_playerLock);
 	TlsProfileSample* sample = GetSample(tag);
 
 	LARGE_INTEGER endTime;
@@ -222,7 +222,7 @@ int C_Utility::TlsProfileManager::GetMaxLen(ItemType type)
 
 void C_Utility::TlsProfileManager::ContainAttributes(std::vector<std::wstring>& attributesArray)
 {
-	SRWLockGuard lockGuard(&_lock);
+	SRWLockGuard lockGuard(&_playerLock);
 	for (auto& pair : _sampleMappingTable)
 	{
 		pair.second->ContainAttributes(attributesArray);

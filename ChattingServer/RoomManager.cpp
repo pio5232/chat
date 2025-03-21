@@ -19,12 +19,34 @@ C_Network::RoomManager::~RoomManager()
 {
 }
 
+void C_Network::RoomManager::PushRoomNum(uint16 roomNum)
+{
+	SRWLockGuard lockGuard(&_queueLock);
+	_queue.push(roomNum);
+}
+
+uint16 C_Network::RoomManager::PopRoomNum()
+{
+	SRWLockGuard lockGuard(&_queueLock);
+	{
+		if (_queue.size() == 0)
+			return 0;
+
+		uint16 roomNum = _queue.front();
+
+		_queue.pop();
+
+		return roomNum;
+	}
+}
+
+
 ErrorCode C_Network::RoomManager::SendToUserRoomInfo(LobbySessionPtr lobbySessionPtr)
 {
 	// RoomListResponsePacket
 
 	std::vector<std::weak_ptr<Room>> lazyProcBuf;
-
+	
 	{
 		SRWLockGuard lockGuard(&_lock);
 
@@ -67,8 +89,8 @@ RoomPtr C_Network::RoomManager::CreateRoom(LobbySessionPtr lobbySessionPtr, WCHA
 
 	_roomCnt.fetch_add(1);
 
-	static volatile uint16 roomNumGen = 0;
-	uint16 roomNum = InterlockedIncrement16((short*)&roomNumGen);
+	static volatile uint16 roomNumGen = UINT16_MAX;
+	uint16 roomNum = InterlockedIncrement16((short*)&roomNumGen) % UINT16_MAX + 1;
 
 	RoomPtr sharedRoom = std::make_shared<C_Network::Room>(lobbySessionPtr->_userId, _maxRoomUserCnt, roomNum, roomName);
 

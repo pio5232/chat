@@ -7,6 +7,7 @@ namespace C_Network
 	const int LanServerPort = 8768;
 
 	const int MAX_PACKET_SIZE = 1000;
+	const ULONGLONG HEARTBEAT_TIMEOUT = 30000; // MS, 30초
 
 	// AAA 구성이나 로직이 동일한 패킷들은 합치도록?. (EX) EnterRoom / LeaveRoom Request Packet은 구성 요소가 똑같기 때문에 하나로 합치고 플래그만 조절하는 식으로 변경, (EnterRoom Notify / LeaveRoomNotify)
 
@@ -53,19 +54,32 @@ namespace C_Network
 		GAME_READY_NOTIFY_PACKET,
 		GAME_START_NOTIFY_PACKET,
 
-		HEART_BEAT_PACKET, // 연결 유지를 위한 패킷, 30초에 하나씩 보내도록 한다
 		ERROR_PACKET, // 클라이언트에서 서버에 보냈지만 유효하지 않은 요청이 되어서 서버에서 사유와 함께 전달하도록 한다. ex) 삭제된 방에 들어가도록 하는 형태
 
 		// -- LAN
-		GAME_SERVER_INFO_NOTIFY_PACKET, // 자신 ip,port 등 정보 보냄
-		GAME_SERVER_INFO_RESPONSE_PACKET,
+		GAME_SERVER_SETTING_REQUEST_PACKET, // 1. 처음 GAME LOBBY에 접속하면 보내는 요청패킷.(GAME -> LOBBY)
+		GAME_SERVER_SETTING_RESPONSE_PACKET, // 2. 게임 서버가 가져야 할 정보들을 보냄 (LOBBY -> GAME)
+		GAME_SERVER_LAN_INFO_PACKET, // 3. 자신 ip,port 등 정보 보냄 (GAME -> LOBBY) 이거 받으면 방에 있는 아이들에게 바로 보냄.
 
 		// -- GAME
 		ENTER_GAME_REQUEST_PACKET,
 		ENTER_GAME_RESPONSE_PACKET,
+		LEAVE_GAME_NOTIFY_PACKET,
 
 		MAKE_MY_CHARACTER_PACKET,
 		MAKE_OTHER_CHARACTER_PACKET,
+
+		GAME_LOAD_COMPELTE_PACKET, // MAKE PLAYER 가 다 작업이 되었다면.
+
+		MOVE_START_REQUEST_PACKET,
+		MOVE_START_NOTIFY_PACKET, // RESPONSE 겸 NOTIFY. 모든 유저에게 보냄
+		MOVE_STOP_REQUEST_PACKET,
+		MOVE_STOP_NOTIFY_PACKET, // RESPONSE 겸 NOTIFY. 모든 유저에게 보냄.
+
+		CHARACTER_POSITION_SYNC_PACKET,
+		UPDATE_POSITION_PACKET,
+
+		HEART_BEAT_PACKET, // 연결 유지를 위한 패킷, 5초에 하나씩 보내도록 한다. // 30초가 지나면 연결이 끊긴 걸로 체크.
 
 		ECHO_PACKET = 65534,
 	};
@@ -281,6 +295,7 @@ namespace C_Network
 		ULONGLONG userId = 0;
 	};
 
+
 	struct GameStartNotifyPacket : public PacketHeader
 	{
 		GameStartNotifyPacket() { type = GAME_START_NOTIFY_PACKET;}
@@ -290,9 +305,23 @@ namespace C_Network
 // ---- LAN
 namespace C_Network
 {
-	struct GameServerInfoNotifyPacket :public PacketHeader
+	struct GameServerSettingRequestPacket :public PacketHeader
 	{
-		GameServerInfoNotifyPacket() { type = GAME_SERVER_INFO_NOTIFY_PACKET; size = sizeof(ipStr) + sizeof(port) + sizeof(roomNum) + sizeof(xorToken); }
+		GameServerSettingRequestPacket() { type = GAME_SERVER_SETTING_REQUEST_PACKET; }
+	};
+
+	struct GameServerSettingResponsePacket :public PacketHeader
+	{
+		GameServerSettingResponsePacket() { type = GAME_SERVER_SETTING_RESPONSE_PACKET; size = sizeof(roomNum) + sizeof(requiredUsers) + sizeof(maxUsers); }
+
+		uint16 roomNum = 0;
+		uint16 requiredUsers = 0; // 로딩 유저 수
+		uint16 maxUsers = 0; // Max, Max - required는 AI로 사용할 것.
+	};
+
+	struct GameServerLanInfoPacket :public PacketHeader
+	{
+		GameServerLanInfoPacket() { type = GAME_SERVER_LAN_INFO_PACKET; size = sizeof(ipStr) + sizeof(port) + sizeof(roomNum) + sizeof(xorToken); }
 
 		WCHAR ipStr[IP_STRING_LEN] = {};
 		uint16 port = 0;
@@ -300,10 +329,7 @@ namespace C_Network
 		ULONGLONG xorToken = 0;
 	};
 
-	struct GameServerInfoResponsePacket :public PacketHeader
-	{
-		GameServerInfoResponsePacket() { type = GAME_SERVER_INFO_RESPONSE_PACKET; }
-	};
+
 }
 
 // ------ GAME
@@ -322,23 +348,110 @@ namespace C_Network
 		EnterGameResponsePacket() { type = ENTER_GAME_RESPONSE_PACKET; }
 	};
 
+	struct LeaveGameNotifyPacket : public PacketHeader
+	{
+		LeaveGameNotifyPacket() { type = LEAVE_GAME_NOTIFY_PACKET; size = sizeof(entityId); }
+		ULONGLONG entityId = 0;
+	};
+
 	struct MakeMyCharacterPacket : public PacketHeader
 	{
-		MakeMyCharacterPacket() { type = MAKE_MY_CHARACTER_PACKET; size = sizeof(userId) + sizeof(pos); }
-		ULONGLONG userId = 0;
-		Vector3 pos;
+		MakeMyCharacterPacket() { type = MAKE_MY_CHARACTER_PACKET; size = sizeof(entityId) + sizeof(pos); }
+		ULONGLONG entityId = 0;
+		Vector3 pos{};
 	};
 
 	struct MakeOtherCharacterPacket : public PacketHeader
 	{
-		MakeOtherCharacterPacket() { type = MAKE_OTHER_CHARACTER_PACKET; size = sizeof(userId) + sizeof(pos); }
-		ULONGLONG userId = 0;
-		Vector3 pos;
+		MakeOtherCharacterPacket() { type = MAKE_OTHER_CHARACTER_PACKET; size = sizeof(entityId) + sizeof(pos) + sizeof(isAi); }
+		ULONGLONG entityId = 0;
+		Vector3 pos{};
+		bool isAi = true;
+	};
+
+	struct GameLoadCompletePacket : public PacketHeader
+	{
+		GameLoadCompletePacket() { type = GAME_LOAD_COMPELTE_PACKET; }
+	};
+
+	// 이후 GameStartPacket이 날아감.
+
+	enum MoveDir : uint16
+	{
+		LEFT = 0,
+		LEFT_UP,
+		UP,
+		RIGHT_UP,
+		RIGHT,
+		RIGHT_DOWN,
+		DOWN,
+		LEFT_DOWN,
+
+		DIR_MAX,
+
+		STOP = 65535,
+	};
+	struct MoveStartRequestPacket : public PacketHeader
+	{
+		MoveStartRequestPacket() { type = MOVE_START_REQUEST_PACKET; size = sizeof(pos) + sizeof(moveDIr); }
+		Vector3 pos{};
+		uint16 moveDIr = DIR_MAX;
+
+	};
+
+	struct MoveStartNotifyPacket : public PacketHeader
+	{
+		MoveStartNotifyPacket() { type = MOVE_START_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(pos) + sizeof(moveDir); }
+		ULONGLONG entityId = 0;
+		Vector3 pos{};
+		uint16 moveDir = DIR_MAX;
+	};
+
+	struct MoveStopRequestPacket : public PacketHeader
+	{
+		MoveStopRequestPacket() { type = MOVE_STOP_REQUEST_PACKET; size = sizeof(stopPos) + sizeof(stopDir); }
+		Vector3 stopPos{};
+		uint16 stopDir = DIR_MAX;
+	};
+
+	struct MoveStopNotifyPacket : public PacketHeader
+	{
+		MoveStopNotifyPacket() { type = MOVE_STOP_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(stopPos) + sizeof(stopDir); }
+		ULONGLONG entityId = 0;
+		Vector3 stopPos{};
+		uint16 stopDir = DIR_MAX;
+	};
+
+	struct CharacterPositionSyncPacket : public PacketHeader
+	{
+		CharacterPositionSyncPacket() { type = CHARACTER_POSITION_SYNC_PACKET; size = sizeof(entityId) + sizeof(syncPos); }
+		ULONGLONG entityId = 0;
+		Vector3 syncPos{};
+
+	};
+
+	// 일정 주기로 자신의 Position 전달
+	struct UpdatePositionPacket : public PacketHeader
+	{
+		UpdatePositionPacket() { type = UPDATE_POSITION_PACKET; size = sizeof(timeStamp) + sizeof(entityId) + sizeof(pos); }
+		ULONGLONG timeStamp = 0;
+		ULONGLONG entityId = 0;
+		Vector3 pos{};
 	};
 }
 
+namespace C_Network
+{
+	// ---- HEART_BEAT
+	struct HeartbeatPacket :public PacketHeader
+	{
+		HeartbeatPacket() { type = HEART_BEAT_PACKET; size = sizeof(timeStamp); }
+		ULONGLONG timeStamp = 0;
+	};
+}
 
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, Vector3 vector);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer, Vector3& vector);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer, Vector3& vector);
 // Only Has Head Packet
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::PacketHeader& packetHeader);
 

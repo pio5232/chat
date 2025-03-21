@@ -94,7 +94,7 @@ namespace C_Utility
 		TlsProfileManager();
 		TlsProfileSample* GetSample(const WCHAR* tag);
 		MappingTable _sampleMappingTable;
-		SRWLOCK _lock;
+		SRWLOCK _playerLock;
 	};
 
 	/*-----------------------------

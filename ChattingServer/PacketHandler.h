@@ -26,35 +26,45 @@ namespace C_Network
 		}
 	private:
 		// 함수 정의
-		static ErrorCode ProcessRoomListRequestPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessRoomListRequestPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
 
-		static ErrorCode ProcessLogInPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
-		static ErrorCode ProcessChatToRoomPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
-		static ErrorCode ProcessChatToUserPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
-		static ErrorCode ProcessMakeRoomRequestPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
-		static ErrorCode ProcessEnterRoomRequestPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
-		static ErrorCode ProcessLeaveRoomRequestPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
-		static ErrorCode ProcessGameReadyRequestPacket(LobbySessionPtr& sharedSession, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessLogInPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessChatToRoomPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessChatToUserPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessMakeRoomRequestPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessEnterRoomRequestPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessLeaveRoomRequestPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessGameReadyRequestPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
 		
+		static ErrorCode ProcessHeartbeatPacket(LobbySessionPtr& lobbySessionPtr, C_Utility::CSerializationBuffer& buffer);
 
 		static std::unordered_map<uint16, PacketFunc> _packetFuncsDic;
 	};
 
 
-	//class LanClientPacketHandler : public LobbyClientPacketHandler<LanClientPacketHandler>
-	//{
-	//public:
-	//	LanClientPacketHandler(class SessionManager* sessionMgr, class LanServer* owner) : _sessionMgr(sessionMgr)
-	//		, _owner(owner)
-	//	{
-	//		_packetFuncsDic[GAME_SERVER_INFO_NOTIFY_PACKET] = &LanClientPacketHandler::ProcessLanInfoNotifyPacket;
-	//	}
+	class LanClientPacketHandler
+	{
+	public:
+		using PacketFunc = ErrorCode(*)(LanSessionPtr&, C_Utility::CSerializationBuffer&);
 
-	//	ErrorCode ProcessLanInfoNotifyPacket(SessionPtr& sharedSession,, C_Utility::CSerializationBuffer& buffer);
-	//private:
-	//	class SessionManager* _sessionMgr;
-	//	class LanServer* _owner;
-	//};
+		static void Init();
+
+		static ErrorCode ProcessPacket(LanSessionPtr& lanSessionPtr, uint16 packetType, C_Utility::CSerializationBuffer& buffer)
+		{
+			if (_packetFuncsDic.find(packetType) == _packetFuncsDic.end())
+				return ErrorCode::CANNOT_FIND_PACKET_FUNC;
+
+			return _packetFuncsDic[packetType](lanSessionPtr, buffer);
+
+		}
+
+		static ErrorCode ProcessLanInfoNotifyPacket(LanSessionPtr& lanSessionPtr, C_Utility::CSerializationBuffer& buffer);
+		static ErrorCode ProcessGameSettingRequestPacket(LanSessionPtr& lanSessionPtr, C_Utility::CSerializationBuffer& buffer);
+		
+	private:
+		static std::unordered_map<uint16, PacketFunc> _packetFuncsDic;
+
+	};
 	//// 나중에 만들게 될 중계 서버, 중계 서버가 생기게 되면 패킷 처리에 대한 부분도 이 녀석이 1차로 검증을 한 후에 메인 로직 서버에 전달해야한다.
 	//class LogInClientPacketHandler : public LobbyClientPacketHandler<LogInClientPacketHandler>
 	//{

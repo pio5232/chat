@@ -189,9 +189,9 @@ namespace C_Memory
 		IntegrationChunkManager(const IntegrationChunkManager&) = delete;
 		IntegrationChunkManager& operator = (const IntegrationChunkManager&) = delete;
 	private:
-		IntegrationChunkManager() { InitializeSRWLock(&_lock); }
+		IntegrationChunkManager() { InitializeSRWLock(&_playerLock); }
 		~IntegrationChunkManager();
-		SRWLOCK _lock;
+		SRWLOCK _playerLock;
 		std::queue<void*> _chunkKeepingQ[POOL_COUNT_TO_LEVEL_3];
 	};
 

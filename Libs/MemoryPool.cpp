@@ -77,7 +77,7 @@ C_Memory::MemoryProtector* C_Memory::MemoryProtector::Detach(void* ptr)
 void C_Memory::IntegrationChunkManager::RegistChunk(uint poolSize, void* nodePtr)
 {
 	uint index = PoolInfo::GetPoolIndex(poolSize);
-	SRWLockGuard lockGuard(&_lock);
+	SRWLockGuard lockGuard(&_playerLock);
 	_chunkKeepingQ[index].push(nodePtr);
 }
 
@@ -86,7 +86,7 @@ void* C_Memory::IntegrationChunkManager::GetNodeChunk(uint poolSize)
 	uint index = PoolInfo::GetPoolIndex(poolSize);
 	void* retPtr = nullptr;
 	{
-		SRWLockGuard lockGuard(&_lock);
+		SRWLockGuard lockGuard(&_playerLock);
 
 		if (_chunkKeepingQ[index].size() > 0)
 		{
@@ -99,7 +99,7 @@ void* C_Memory::IntegrationChunkManager::GetNodeChunk(uint poolSize)
 
 C_Memory::IntegrationChunkManager::~IntegrationChunkManager()
 {
-	SRWLockGuard lockGuard(&_lock);
+	SRWLockGuard lockGuard(&_playerLock);
 	for (auto& q : _chunkKeepingQ)
 	{
 		while (q.size())
