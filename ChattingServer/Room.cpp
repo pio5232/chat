@@ -2,7 +2,7 @@
 #include "Room.h"
 #include "NetworkBase.h"
 #include "PacketHandler.h"
-#include "PacketMaker.h"
+#include "BufferMaker.h"
 #include "RoomManager.h"
 #include "LobbySession.h"
 
@@ -28,7 +28,7 @@ void C_Network::Room::EnterRoom(LobbySessionPtr lobbySessionPtr)
 	responsePacket.size = sizeof(responsePacket.bAllow) + sizeof(responsePacket.idCnt);
 	if (_maxUserCnt == _userMap.size())
 	{
-		SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeErrorPacket(PacketErrorCode::FULL_ROOM);
+		SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeErrorPacket(PacketErrorCode::FULL_ROOM);
 
 		lobbySessionPtr->Send(sendBuffer);
 
@@ -38,7 +38,7 @@ void C_Network::Room::EnterRoom(LobbySessionPtr lobbySessionPtr)
 	}
 	else if (_roomState == RoomState::RUNNING)
 	{
-		SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeErrorPacket(PacketErrorCode::ALREADY_RUNNING_ROOM);
+		SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeErrorPacket(PacketErrorCode::ALREADY_RUNNING_ROOM);
 
 		lobbySessionPtr->Send(sendBuffer);
 
@@ -56,7 +56,7 @@ void C_Network::Room::EnterRoom(LobbySessionPtr lobbySessionPtr)
 	ULONGLONG userId = lobbySessionPtr->_userId;
 
 	{
-		C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(responsePacket) + responsePacket.size);
+		C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeSendBuffer(sizeof(responsePacket) + responsePacket.size);
 
 		std::vector<ULONGLONG> tempVec;
 		tempVec.reserve(_userMap.size());
@@ -92,7 +92,7 @@ void C_Network::Room::EnterRoom(LobbySessionPtr lobbySessionPtr)
 	C_Network::EnterRoomNotifyPacket enterNotifyPacket;
 	enterNotifyPacket.enterUserId = userId;
 	{
-		C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(enterNotifyPacket);
+		C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(enterNotifyPacket);
 
 		SendToAll(sendBuffer, userId, true);
 	}
@@ -102,7 +102,7 @@ void C_Network::Room::LeaveRoom(LobbySessionPtr lobbySessionPtr)
 {
 	{
 		C_Network::LeaveRoomResponsePacket leaveRoomResponsePacket;
-		C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(leaveRoomResponsePacket);
+		C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(leaveRoomResponsePacket);
 
 		lobbySessionPtr->Send(sendBuffer);
 	}
@@ -116,7 +116,7 @@ void C_Network::Room::LeaveRoom(LobbySessionPtr lobbySessionPtr)
 	{
 		C_Network::LeaveRoomNotifyPacket leaveRoomNotifyPacket;
 		leaveRoomNotifyPacket.leaveUserId = userId;
-		C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(leaveRoomNotifyPacket);
+		C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(leaveRoomNotifyPacket);
 
 		SendToAll(sendBuffer);
 	}
@@ -145,7 +145,7 @@ void C_Network::Room::LeaveRoom(LobbySessionPtr lobbySessionPtr)
 
 				SetReady(lobbySession, false, false);
 
-				C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(ownerChangeNotifyPacket);
+				C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(ownerChangeNotifyPacket);
 
 				SendToAll(sendBuffer);
 			}
@@ -184,7 +184,7 @@ void C_Network::Room::SetReady(LobbySessionPtr lobbySessionPtr, bool isReady, bo
 
 		C_Network::GameStartNotifyPacket startNotifyPacket;
 
-		C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(startNotifyPacket);
+		C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(startNotifyPacket);
 
 		SendToAll(sendBuffer);
 
@@ -205,7 +205,7 @@ void C_Network::Room::SetReady(LobbySessionPtr lobbySessionPtr, bool isReady, bo
 		readyNotifyPacket.userId = userId;
 		readyNotifyPacket.isReady = isReady;
 
-		C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(readyNotifyPacket);
+		C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(readyNotifyPacket);
 
 		SendToAll(sendBuffer);
 	}

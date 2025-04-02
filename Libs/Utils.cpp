@@ -43,7 +43,7 @@ double GetRandDouble(double min, double max, int roundPlaceValue)
 
 	static std::mt19937 gen(randomDevice());
 
-	static std::uniform_real_distribution<double> dist(min, max);
+	std::uniform_real_distribution<double> dist(min, max);
 
 	double d = dist(gen);
 
@@ -62,9 +62,22 @@ int GetRand(int min, int max)
 
 	static std::mt19937 gen(randomDevice());
 
-	static std::uniform_int_distribution<int> dist(min, max);
+	std::uniform_int_distribution<int> dist(min, max);
 
 	return dist(gen);
+}
+
+bool CheckChance(int percentage)
+{
+	return static_cast<int>(GetRandDouble(0.0, 100.0)) < percentage;
+}
+
+float NormalizeAngle(float angle)
+{
+	angle = fmod(angle + 180.0f, 360.0f);
+	if (angle < 0)
+		angle += 360.0f;
+	return angle - 180.0f;
 }
 
 Vector3::Vector3() : x(0), y(0), z(0)
@@ -83,3 +96,4 @@ float Vector3::Distance(const Vector3& firstVec, const Vector3& secondVec)
 
 	return static_cast<float>(sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ));
 }
+

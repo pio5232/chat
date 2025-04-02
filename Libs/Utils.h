@@ -190,6 +190,10 @@ struct Vector3
 		return *this;
 	}
 
+	Vector3 operator- (const Vector3& other)
+	{
+		return Vector3(x - other.x, y - other.y, z - other.z);
+	}
 	Vector3 operator*(float f)
 	{
 		return Vector3(x * f, y * f, z * f);
@@ -240,11 +244,26 @@ struct Vector3
 		return Zero();
 	}
 
+	bool operator== (const Vector3& other) const
+	{
+		return this->x == other.x && this->y == other.y && this->z == other.z;
+	}
+
+	bool operator!= (const Vector3& other) const
+	{
+		return !((*this) == other);
+	}
 
 	float x;
 	float y;
 	float z;
 };
 
-double GetRandDouble(double min, double max, int roundPlaceValue = 1);
+const float deg2Rad = 180.0f / 3.141592f;
+
+double GetRandDouble(double min, double max, int roundPlaceValue = 0);
 int GetRand(int min, int max);
+
+bool CheckChance(int percentage);
+
+float NormalizeAngle(float angle);

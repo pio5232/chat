@@ -332,6 +332,7 @@ void C_Network::Session::UpdateHeartbeat(ULONGLONG now)
 {
 	if (now > _lastTimeStamp)
 		_lastTimeStamp = now;
+
 }
 
 void C_Network::Session::CheckHeartbeatTimeout(ULONGLONG now)

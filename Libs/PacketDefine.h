@@ -76,8 +76,13 @@ namespace C_Network
 		MOVE_STOP_REQUEST_PACKET,
 		MOVE_STOP_NOTIFY_PACKET, // RESPONSE 겸 NOTIFY. 모든 유저에게 보냄.
 
+		ATTACK_REQUEST_PACKET,
+		ATTACK_NOTIFY_PACKET,
+
+		ATTACKED_DAMAGE_NOTIFY_PACKET,
+
 		CHARACTER_POSITION_SYNC_PACKET,
-		UPDATE_POSITION_PACKET,
+		UPDATE_TRANSFORM_PACKET,
 
 		HEART_BEAT_PACKET, // 연결 유지를 위한 패킷, 5초에 하나씩 보내도록 한다. // 30초가 지나면 연결이 끊긴 걸로 체크.
 
@@ -363,10 +368,9 @@ namespace C_Network
 
 	struct MakeOtherCharacterPacket : public PacketHeader
 	{
-		MakeOtherCharacterPacket() { type = MAKE_OTHER_CHARACTER_PACKET; size = sizeof(entityId) + sizeof(pos) + sizeof(isAi); }
+		MakeOtherCharacterPacket() { type = MAKE_OTHER_CHARACTER_PACKET; size = sizeof(entityId) + sizeof(pos); }
 		ULONGLONG entityId = 0;
 		Vector3 pos{};
-		bool isAi = true;
 	};
 
 	struct GameLoadCompletePacket : public PacketHeader
@@ -385,7 +389,7 @@ namespace C_Network
 		RIGHT,
 		RIGHT_DOWN,
 		DOWN,
-		LEFT_DOWN,
+		LEFT_DOWN, 
 
 		DIR_MAX,
 
@@ -393,50 +397,61 @@ namespace C_Network
 	};
 	struct MoveStartRequestPacket : public PacketHeader
 	{
-		MoveStartRequestPacket() { type = MOVE_START_REQUEST_PACKET; size = sizeof(pos) + sizeof(moveDIr); }
+		MoveStartRequestPacket() { type = MOVE_START_REQUEST_PACKET; size = sizeof(pos) + sizeof(rotY); }
 		Vector3 pos{};
-		uint16 moveDIr = DIR_MAX;
-
+		float rotY = 0; // rotX, rotZ 는 0이다.
 	};
 
 	struct MoveStartNotifyPacket : public PacketHeader
 	{
-		MoveStartNotifyPacket() { type = MOVE_START_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(pos) + sizeof(moveDir); }
+		MoveStartNotifyPacket() { type = MOVE_START_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(pos) + sizeof(rotY); }
 		ULONGLONG entityId = 0;
 		Vector3 pos{};
-		uint16 moveDir = DIR_MAX;
+		float rotY = 0;
+		//uint16 moveDir = DIR_MAX;
 	};
 
 	struct MoveStopRequestPacket : public PacketHeader
 	{
-		MoveStopRequestPacket() { type = MOVE_STOP_REQUEST_PACKET; size = sizeof(stopPos) + sizeof(stopDir); }
-		Vector3 stopPos{};
-		uint16 stopDir = DIR_MAX;
+		MoveStopRequestPacket() { type = MOVE_STOP_REQUEST_PACKET; size = sizeof(pos) + sizeof(rotY); }
+		Vector3 pos{};
+		float rotY = 0;
 	};
 
 	struct MoveStopNotifyPacket : public PacketHeader
 	{
-		MoveStopNotifyPacket() { type = MOVE_STOP_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(stopPos) + sizeof(stopDir); }
+		MoveStopNotifyPacket() { type = MOVE_STOP_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(pos) + sizeof(rotY); }
 		ULONGLONG entityId = 0;
-		Vector3 stopPos{};
-		uint16 stopDir = DIR_MAX;
+		Vector3 pos{};
+		float rotY = 0;
 	};
 
+	struct AttackRequestPacket : public PacketHeader
+	{
+		AttackRequestPacket() { type = ATTACK_REQUEST_PACKET;}
+	};
+
+	struct AttackNotifyPacket : public PacketHeader
+	{
+		AttackNotifyPacket() { type = ATTACK_NOTIFY_PACKET; size = sizeof(entityId); }
+		ULONGLONG entityId = 0;
+	};
 	struct CharacterPositionSyncPacket : public PacketHeader
 	{
-		CharacterPositionSyncPacket() { type = CHARACTER_POSITION_SYNC_PACKET; size = sizeof(entityId) + sizeof(syncPos); }
+		CharacterPositionSyncPacket() { type = CHARACTER_POSITION_SYNC_PACKET; size = sizeof(entityId) + sizeof(syncPos) + sizeof(syncRot); }
 		ULONGLONG entityId = 0;
 		Vector3 syncPos{};
-
+		Vector3 syncRot{};
 	};
 
 	// 일정 주기로 자신의 Position 전달
-	struct UpdatePositionPacket : public PacketHeader
+	struct UpdateTransformPacket : public PacketHeader
 	{
-		UpdatePositionPacket() { type = UPDATE_POSITION_PACKET; size = sizeof(timeStamp) + sizeof(entityId) + sizeof(pos); }
+		UpdateTransformPacket() { type = UPDATE_TRANSFORM_PACKET; size = sizeof(timeStamp) + sizeof(entityId) + sizeof(pos) + sizeof(rot); }
 		ULONGLONG timeStamp = 0;
 		ULONGLONG entityId = 0;
 		Vector3 pos{};
+		Vector3 rot{};
 	};
 }
 

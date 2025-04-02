@@ -13,7 +13,8 @@ void C_Utility::LobbyMonitor::MonitoringJob()
 	C_Network::RoomManager::GetInstance().GetRoomsRead(readRoomInfos);
 
 	//system("cls");
-	printf("[ Current User Count : %u ] \n", _sessionMgr->GetSessionCnt());
+
+	wprintf(L"[ Current Session Count : %u ] \n", _sessionMgr->GetSessionCnt());
 
 	for (auto& weakPtr : readRoomInfos)
 	{
@@ -23,9 +24,10 @@ void C_Utility::LobbyMonitor::MonitoringJob()
 
 			WCHAR* pWchar = static_cast<WCHAR*>(room->GetRoomNamePtr());
 
-			wprintf(L"[ %d번 방	[ %s ]	owner : %lld	  ( %d / %d )	준비 인원 : [%u] \n", room->GetRoomNum(), pWchar, room->GetOwnerId(), room->GetCurUserCnt(), room->GetMaxUserCnt(), room->GetReadyCnt());
+			wprintf(L"[ %d번 방	[ %s ]	owner : %llU	  ( %d / %d )	준비 인원 : [%u] \n", room->GetRoomNum(), pWchar, room->GetOwnerId(), room->GetCurUserCnt(), room->GetMaxUserCnt(), room->GetReadyCnt());
 		}
 	}
 
+	wprintf(L"\n\n\n");
 	return;
 }

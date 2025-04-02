@@ -11,7 +11,7 @@
 #include "PacketHandler.h"
 #include "Session.h"
 #include "RoomManager.h"
-#include "PacketMaker.h"
+#include "BufferMaker.h"
 #include "LobbySession.h"
 using namespace C_Network;
 
@@ -37,7 +37,7 @@ public:
 		packet.size = 8;
 		buffer >> packet.data;
 
-		SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(packet));
+		SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeSendBuffer(sizeof(packet));
 
 		*sendBuffer << packet.size << packet.data;
 
@@ -65,9 +65,9 @@ public:
 
 //ChattingServer server(NetAddress(std::wstring(L"127.0.0.1"),ServerPort),6000);
 
-int main()
+int main() 
 {
-	// 파일 읽어서 세팅
+	// 파일 읽어서 세팅 
 	RoomManager::GetInstance().Init(100,100);
 
 	//std::shared_ptr<ChattingServer> server = std::make_shared<ChattingServer>(NetAddress(std::wstring(L"127.0.0.1"), ServerPort), 9000, []() { return std::static_pointer_cast<Session>(std::make_shared<EchoSession>()); });

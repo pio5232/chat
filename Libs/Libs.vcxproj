@@ -39,7 +39,7 @@
     <ClInclude Include="MemoryPool.h" />
     <ClInclude Include="NetworkUtils.h" />
     <ClInclude Include="PacketDefine.h" />
-    <ClInclude Include="PacketMaker.h" />
+    <ClInclude Include="BufferMaker.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="TLSInstance.h" />
     <ClInclude Include="TlsProfiler.h" />
@@ -103,7 +103,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">LibsPch.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="PacketDefine.cpp" />
-    <ClCompile Include="PacketMaker.cpp" />
+    <ClCompile Include="BufferMaker.cpp" />
     <ClCompile Include="Session.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">LibsPch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LibsPch.h</PrecompiledHeaderFile>

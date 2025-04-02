@@ -2,7 +2,7 @@
 #include "LobbyServer.h"
 #include "LobbySession.h"
 #include "PacketHandler.h"
-#include "PacketMaker.h"
+#include "BufferMaker.h"
 #include "RoomManager.h"
 #include "LanSession.h"
 /*---------------------------------------
@@ -52,7 +52,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessChatToRoomPacket(LobbySess
 	packetHeader.type = CHAT_TO_ROOM_RESPONSE_PACKET;
 
 	// --- ChatRoomResponsePacket
-	C_Network::SharedSendBuffer responseBuffer = C_Network::PacketMaker::MakePacket(packetHeader);
+	C_Network::SharedSendBuffer responseBuffer = C_Network::BufferMaker::MakePacket(packetHeader);
 	lobbySessionPtr->Send(responseBuffer);
 
 	ULONGLONG userId = lobbySessionPtr->_userId;
@@ -61,7 +61,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessChatToRoomPacket(LobbySess
 	packetHeader.size = sizeof(userId) + sizeof(messageLen) + messageLen;
 	packetHeader.type = CHAT_NOTIFY_PACKET;
 
-	C_Network::SharedSendBuffer notifyBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
+	C_Network::SharedSendBuffer notifyBuffer = C_Network::BufferMaker::MakeSendBuffer(sizeof(packetHeader) + packetHeader.size);
 
 	*notifyBuffer << packetHeader << userId << messageLen;
 	notifyBuffer->PutData(reinterpret_cast<const char*>(payLoad), messageLen);
@@ -122,7 +122,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessMakeRoomRequestPacket(Lobb
 		wmemcpy_s(makeRoomResponsePacket.roomInfo.roomName, ROOM_NAME_MAX_LEN, roomName, ROOM_NAME_MAX_LEN);
 	}
 
-	C_Network::SharedSendBuffer responsePacketBuffer = C_Network::PacketMaker::MakePacket(makeRoomResponsePacket);
+	C_Network::SharedSendBuffer responsePacketBuffer = C_Network::BufferMaker::MakePacket(makeRoomResponsePacket);
 
 	lobbySessionPtr->Send(responsePacketBuffer);
 
@@ -139,7 +139,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessEnterRoomRequestPacket(Lob
 
 	if (nullptr == roomPtr)
 	{
-		SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeErrorPacket(PacketErrorCode::REQUEST_DESTROYED_ROOM);
+		SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeErrorPacket(PacketErrorCode::REQUEST_DESTROYED_ROOM);
 
 		lobbySessionPtr->Send(sendBuffer);
 		printf("Invalid Access - Destroyed Room");
@@ -148,7 +148,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessEnterRoomRequestPacket(Lob
 
 	if (wcscmp(requestPacket.roomName, static_cast<const WCHAR*>(roomPtr->GetRoomNamePtr())) != 0)
 	{
-		SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeErrorPacket(PacketErrorCode::REQUEST_DIFF_ROOM_NAME);
+		SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeErrorPacket(PacketErrorCode::REQUEST_DIFF_ROOM_NAME);
 
 		lobbySessionPtr->Send(sendBuffer);
 		printf("EnterRoom - Room name is Diffrent\n");
@@ -259,7 +259,7 @@ ErrorCode C_Network::LobbyClientPacketHandler::ProcessLogInPacket(LobbySessionPt
 
 	lobbySessionPtr->_userId = userId;
 
-	C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakePacket(clientResponsePacket);
+	C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakePacket(clientResponsePacket);
 
 	lobbySessionPtr->Send(sendBuffer);
 
@@ -327,7 +327,7 @@ ErrorCode C_Network::LanClientPacketHandler::ProcessLanInfoNotifyPacket(LanSessi
 	wprintf(L"Room : [ %d ]\n", lanInfoPacket.roomNum);
 	wprintf(L"xorToken : [ %llu ], After : [%llu]\n", lanInfoPacket.xorToken, lanInfoPacket.xorToken ^ xorTokenKey);
 
-	C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(lanInfoPacket));
+	C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeSendBuffer(sizeof(lanInfoPacket));
 
 	*sendBuffer << lanInfoPacket.size << lanInfoPacket.type;
 
@@ -368,7 +368,7 @@ ErrorCode C_Network::LanClientPacketHandler::ProcessGameSettingRequestPacket(Lan
 	settingResponsePacket.requiredUsers = roomPtr->GetCurUserCnt();
 	settingResponsePacket.maxUsers = roomPtr->GetMaxUserCnt();
 	
-	SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(settingResponsePacket));
+	SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeSendBuffer(sizeof(settingResponsePacket));
 
 	*sendBuffer << settingResponsePacket.size << settingResponsePacket.type << settingResponsePacket.roomNum << settingResponsePacket.requiredUsers << settingResponsePacket.maxUsers;
 	

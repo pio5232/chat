@@ -2,7 +2,7 @@
 #include "RoomManager.h"
 #include "NetworkBase.h"
 #include "PacketHandler.h"
-#include "PacketMaker.h"
+#include "BufferMaker.h"
 #include "LobbySession.h"
 
 void C_Network::RoomManager::Init(uint16 maxRoomCount, uint16 maxRoomUserCnt)
@@ -62,7 +62,7 @@ ErrorCode C_Network::RoomManager::SendToUserRoomInfo(LobbySessionPtr lobbySessio
 	header.size = sizeof(roomCnt) + roomCnt * RoomInfo::GetSize();;
 	header.type = ROOM_LIST_RESPONSE_PACKET;
 
-	C_Network::SharedSendBuffer sendBuffer = C_Network::PacketMaker::MakeSendBuffer(sizeof(RoomListResponsePacket) + roomCnt * sizeof(RoomInfo));
+	C_Network::SharedSendBuffer sendBuffer = C_Network::BufferMaker::MakeSendBuffer(sizeof(RoomListResponsePacket) + roomCnt * sizeof(RoomInfo));
 
 	*sendBuffer << header << roomCnt;
 
