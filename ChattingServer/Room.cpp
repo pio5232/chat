@@ -6,9 +6,13 @@
 #include "RoomManager.h"
 #include "LobbySession.h"
 
+std::atomic<int> C_Network::Room::_aliveRoomCount = 0;
+
 C_Network::Room::Room(ULONGLONG ownerId, uint16 maxUserCnt, uint16 roomNum, WCHAR* roomName) : _maxUserCnt(maxUserCnt),
 _ownerId(ownerId), _roomNumber(roomNum), _readyCnt(0)
 {
+	_aliveRoomCount.fetch_add(1);
+
 	wmemcpy_s(_roomName, ROOM_NAME_MAX_LEN, roomName, ROOM_NAME_MAX_LEN);
 
 	_userMap.reserve(maxUserCnt);
@@ -19,6 +23,7 @@ C_Network::Room::~Room()
 {
 	printf("¹æ ÆøÆÄ\n");
 
+	_aliveRoomCount.fetch_sub(1);
 }
 
 void C_Network::Room::EnterRoom(LobbySessionPtr lobbySessionPtr)

@@ -3,6 +3,8 @@
 #include "PacketHandler.h"
 #include "Room.h"
 
+std::atomic<int> C_Network::LobbySession::_aliveLobbySessionCount;
+
 void C_Network::LobbySession::OnConnected()
 {
 }

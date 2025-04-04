@@ -5,7 +5,6 @@ enum class ComponentType
 	NONE,
 	Transform,
 	Stat,
-	Move,
 };
 
 class BaseComponent

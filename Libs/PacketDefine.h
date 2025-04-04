@@ -62,12 +62,14 @@ namespace C_Network
 		GAME_SERVER_LAN_INFO_PACKET, // 3. 자신 ip,port 등 정보 보냄 (GAME -> LOBBY) 이거 받으면 방에 있는 아이들에게 바로 보냄.
 
 		// -- GAME
+		GAME_INIT_DONE_PACKET,
 		ENTER_GAME_REQUEST_PACKET,
 		ENTER_GAME_RESPONSE_PACKET,
 		LEAVE_GAME_NOTIFY_PACKET,
 
 		MAKE_MY_CHARACTER_PACKET,
 		MAKE_OTHER_CHARACTER_PACKET,
+		DEL_OTHER_CHARACTER_PACKET,
 
 		GAME_LOAD_COMPELTE_PACKET, // MAKE PLAYER 가 다 작업이 되었다면.
 
@@ -340,6 +342,11 @@ namespace C_Network
 // ------ GAME
 namespace C_Network
 {
+	struct GameInitDonePacket : public PacketHeader
+	{
+		GameInitDonePacket() { type = GAME_INIT_DONE_PACKET; }
+	};
+
 	struct EnterGameRequestPacket :public PacketHeader
 	{
 		EnterGameRequestPacket() { type = ENTER_GAME_REQUEST_PACKET; size = sizeof(userId) + sizeof(token); }
@@ -373,6 +380,11 @@ namespace C_Network
 		Vector3 pos{};
 	};
 
+	struct DeleteOtherCharacterPacket : public PacketHeader
+	{
+		DeleteOtherCharacterPacket() { type = DEL_OTHER_CHARACTER_PACKET; size = sizeof(entityId); }
+		ULONGLONG entityId = 0;
+	};
 	struct GameLoadCompletePacket : public PacketHeader
 	{
 		GameLoadCompletePacket() { type = GAME_LOAD_COMPELTE_PACKET; }
@@ -465,8 +477,8 @@ namespace C_Network
 	};
 }
 
-serializationBuffer& operator<< (serializationBuffer& serialBuffer, Vector3& vector);
-serializationBuffer& operator>> (serializationBuffer& serialBuffer, Vector3& vector);
+serializationBuffer& operator<< (serializationBuffer& serialBuffer,const Vector3& vector);
+serializationBuffer& operator>> (serializationBuffer& serialBuffer,Vector3& vector);
 // Only Has Head Packet
 serializationBuffer& operator<< (serializationBuffer& serialBuffer, C_Network::PacketHeader& packetHeader);
 

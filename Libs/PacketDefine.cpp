@@ -2,7 +2,7 @@
 #include "PacketDefine.h"
 #include "CSerializationBuffer.h"
 
-serializationBuffer& operator<<(serializationBuffer& serialBuffer, Vector3& vector)
+serializationBuffer& operator<<(serializationBuffer& serialBuffer, const Vector3& vector)
 {
 	serialBuffer << vector.x << vector.y << vector.z;
 

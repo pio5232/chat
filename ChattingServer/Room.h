@@ -32,7 +32,10 @@ namespace C_Network
 		
 		ErrorCode SendToAll(SharedSendBuffer sharedSendBuffer, ULONGLONG excludedId = 0, bool isexcluded = false);
 
+		static int GetAliveRoomCount() { return _aliveRoomCount; }
+
 	private:
+		static std::atomic<int> _aliveRoomCount;
 
 		std::unordered_map<ULONGLONG, std::weak_ptr<LobbySession>> _userMap; // USER ID - SESSION  
 
