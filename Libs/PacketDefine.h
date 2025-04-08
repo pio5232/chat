@@ -81,7 +81,8 @@ namespace C_Network
 		ATTACK_REQUEST_PACKET,
 		ATTACK_NOTIFY_PACKET,
 
-		ATTACKED_DAMAGE_NOTIFY_PACKET,
+		ATTACKED_NOTIFY_PACKET,
+		DIE_NOTIFY_PACKET,
 
 		CHARACTER_POSITION_SYNC_PACKET,
 		UPDATE_TRANSFORM_PACKET,
@@ -446,6 +447,19 @@ namespace C_Network
 	struct AttackNotifyPacket : public PacketHeader
 	{
 		AttackNotifyPacket() { type = ATTACK_NOTIFY_PACKET; size = sizeof(entityId); }
+		ULONGLONG entityId = 0;
+	};
+
+	struct AttackedNotifyPacket : public PacketHeader
+	{
+		AttackedNotifyPacket() { type = ATTACKED_NOTIFY_PACKET; size = sizeof(entityId) + sizeof(currentHp); }
+		ULONGLONG entityId = 0;
+		uint16 currentHp = 0;
+	};
+
+	struct DieNotifyPacket : public PacketHeader
+	{
+		DieNotifyPacket() { type = DIE_NOTIFY_PACKET; size = sizeof(entityId); }
 		ULONGLONG entityId = 0;
 	};
 	struct CharacterPositionSyncPacket : public PacketHeader
